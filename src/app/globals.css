@@ -24,3 +24,33 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* React Flow MiniMap styling for better visibility */
+.react-flow__minimap {
+  background-color: #1f2937 !important;
+  border: 2px solid #4b5563 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+}
+
+.react-flow__minimap-mask {
+  fill: rgba(59, 130, 246, 0.3) !important;
+  stroke: #3b82f6 !important;
+  stroke-width: 2px !important;
+}
+
+.react-flow__minimap-node {
+  fill: #3b82f6 !important;
+  stroke: #60a5fa !important;
+  stroke-width: 2px !important;
+}
+
+.react-flow__minimap-node.selected {
+  fill: #10b981 !important;
+  stroke: #34d399 !important;
+}
+
+.react-flow__minimap-edge {
+  stroke: #818cf8 !important;
+  stroke-width: 2px !important;
+}
