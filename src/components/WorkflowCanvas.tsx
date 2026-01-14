@@ -16,6 +16,7 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import { useWorkflowStore } from "@/store/workflowStore";
 import TextNode, { type TextNodeData } from "@/components/nodes/TextNode";
+import UploadImageNode from "@/components/nodes/UploadImageNode";
 
 const fitViewOptions: FitViewOptions = {
   padding: 0.2,
@@ -24,6 +25,7 @@ const fitViewOptions: FitViewOptions = {
 
 const nodeTypes = {
   text: TextNode,
+  uploadImage: UploadImageNode,
 };
 
 export default function WorkflowCanvas() {
