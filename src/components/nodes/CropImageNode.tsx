@@ -15,8 +15,10 @@ export type CropImageNodeData = {
 };
 
 function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
-  const { nodes, nodeResults, updateNode } = useWorkflowStore();
+  const { nodes, nodeResults, updateNode, nodeStatus } = useWorkflowStore();
   const { getEdges, getNodes } = useReactFlow();
+  
+  const status = nodeStatus[id] || "idle";
 
   // Ensure data exists with defaults
   const nodeData: CropImageNodeData = {
@@ -133,17 +135,35 @@ function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
     [id, nodeData, updateNode]
   );
 
+  // Determine border color based on status
+  const getBorderColor = () => {
+    if (status === "running") return "border-yellow-500 animate-pulse";
+    if (status === "success") return "border-green-500";
+    if (status === "failed") return "border-red-500";
+    if (selected) return "border-blue-500";
+    return "border-gray-300";
+  };
+
   return (
     <div
-      className={`px-4 py-3 shadow-lg rounded-lg bg-white border-2 min-w-[250px] ${
-        selected ? "border-blue-500" : "border-gray-300"
-      }`}
+      className={`px-4 py-3 shadow-lg rounded-lg bg-white border-2 min-w-[250px] ${getBorderColor()}`}
     >
       <div className="mb-2">
-        <label className="flex items-center gap-1 text-xs font-semibold text-gray-900 mb-1">
-          <Crop className="w-3 h-3" />
-          {nodeData.label}
-        </label>
+        <div className="flex items-center justify-between mb-1">
+          <label className="flex items-center gap-1 text-xs font-semibold text-gray-900">
+            <Crop className="w-3 h-3" />
+            {nodeData.label}
+          </label>
+          {status === "running" && (
+            <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+          )}
+          {status === "success" && (
+            <div className="w-2 h-2 bg-green-500 rounded-full" />
+          )}
+          {status === "failed" && (
+            <div className="w-2 h-2 bg-red-500 rounded-full" />
+          )}
+        </div>
 
         {/* Image Input */}
         <div className="mb-2">

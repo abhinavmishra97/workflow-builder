@@ -5,6 +5,7 @@ import type {
   NodeResult,
   WorkflowState,
 } from "@/types/workflow";
+import { runWorkflow, resetWorkflowStatus } from "@/lib/workflowExecutor";
 
 interface WorkflowStore extends WorkflowState {
   // Actions
@@ -20,6 +21,9 @@ interface WorkflowStore extends WorkflowState {
   setSelectedNodes: (nodeIds: string[]) => void;
   clearNodeResult: (nodeId: string) => void;
   resetWorkflow: () => void;
+  // Execution actions
+  executeWorkflow: () => Promise<void>;
+  isExecuting: boolean;
 }
 
 const initialState: WorkflowState = {
@@ -32,6 +36,7 @@ const initialState: WorkflowState = {
 
 export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
   ...initialState,
+  isExecuting: false,
 
   addNode: (node) => {
     set((state) => ({
@@ -150,5 +155,44 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
 
   resetWorkflow: () => {
     set(initialState);
+  },
+
+  executeWorkflow: async () => {
+    const state = get();
+    
+    // Don't execute if already running
+    if (state.isExecuting) {
+      return;
+    }
+
+    // Reset all statuses to idle first
+    resetWorkflowStatus(state.nodes, state.setNodeStatus);
+
+    set({ isExecuting: true });
+
+    try {
+      await runWorkflow(state.nodes, state.edges, {
+        setNodeStatus: (nodeId, status) => {
+          get().setNodeStatus(nodeId, status);
+        },
+        setNodeResult: (nodeId, result) => {
+          get().setNodeResult(nodeId, {
+            output: result,
+            timestamp: Date.now(),
+          });
+        },
+        onWorkflowComplete: () => {
+          set({ isExecuting: false });
+        },
+        onWorkflowError: (error) => {
+          console.error("Workflow execution error:", error);
+          set({ isExecuting: false });
+        },
+      });
+    } catch (error) {
+      console.error("Workflow execution failed:", error);
+      set({ isExecuting: false });
+      throw error;
+    }
   },
 }));

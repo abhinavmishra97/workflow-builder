@@ -38,7 +38,8 @@ const nodeTypes = {
 };
 
 export default function WorkflowCanvas() {
-  const { nodes, edges, setNodes, setEdges, connectNodes } = useWorkflowStore();
+  const { nodes, edges, setNodes, setEdges, connectNodes, executeWorkflow, isExecuting } =
+    useWorkflowStore();
 
   const onInit = useCallback((reactFlowInstance: ReactFlowInstance) => {
     reactFlowInstance.fitView(fitViewOptions);
@@ -67,9 +68,33 @@ export default function WorkflowCanvas() {
     [connectNodes]
   );
 
+  const handleRunWorkflow = useCallback(async () => {
+    try {
+      await executeWorkflow();
+    } catch (error) {
+      console.error("Workflow execution error:", error);
+    }
+  }, [executeWorkflow]);
+
   return (
     <div className="h-screen w-full relative">
       <NodePalette />
+      {/* Run Workflow Button */}
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50">
+        <button
+          onClick={handleRunWorkflow}
+          disabled={isExecuting || nodes.length === 0}
+          className={`px-4 py-2 rounded-lg font-medium shadow-lg transition-all ${
+            isExecuting
+              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+              : nodes.length === 0
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-blue-500 text-white hover:bg-blue-600 active:scale-95"
+          }`}
+        >
+          {isExecuting ? "Running..." : "Run Workflow"}
+        </button>
+      </div>
       <ReactFlow
         nodes={nodes}
         edges={edges}
