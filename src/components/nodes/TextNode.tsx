@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback } from "react";
-import { Handle, Position, type NodeProps } from "reactflow";
+import { Handle, Position, useReactFlow, type NodeProps } from "reactflow";
 import { useWorkflowStore } from "@/store/workflowStore";
 
 export type TextNodeData = {
@@ -10,7 +10,8 @@ export type TextNodeData = {
 };
 
 function TextNode({ id, data, selected }: NodeProps<TextNodeData>) {
-  const { edges, updateNode } = useWorkflowStore();
+  const { updateNode } = useWorkflowStore();
+  const { getEdges } = useReactFlow();
 
   // Ensure data exists with defaults
   const nodeData: TextNodeData = {
@@ -18,7 +19,8 @@ function TextNode({ id, data, selected }: NodeProps<TextNodeData>) {
     label: data?.label ?? "Text",
   };
 
-  // Check if input handle is connected
+  // Check if input handle is connected using React Flow API
+  const edges = getEdges();
   const hasInputConnection = edges.some(
     (edge) => edge.target === id && edge.targetHandle === "input"
   );

@@ -3,19 +3,19 @@
 import { memo, useCallback, useRef, useState } from "react";
 import { Handle, Position, useReactFlow, type NodeProps } from "reactflow";
 import { useWorkflowStore } from "@/store/workflowStore";
-import { Upload, Image as ImageIcon, X } from "lucide-react";
+import { Upload, Video, X } from "lucide-react";
 
-export type UploadImageNodeData = {
-  imageUrl: string | null;
+export type UploadVideoNodeData = {
+  videoUrl: string | null;
   label?: string;
   isUploading?: boolean;
   error?: string;
 };
 
-const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
-const ACCEPTED_FILE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
+const ACCEPTED_FILE_TYPES = ["video/mp4", "video/quicktime", "video/webm", "video/x-m4v"];
+const ACCEPTED_FILE_EXTENSIONS = [".mp4", ".mov", ".webm", ".m4v"];
 
-function UploadImageNode({ id, data, selected }: NodeProps<UploadImageNodeData>) {
+function UploadVideoNode({ id, data, selected }: NodeProps<UploadVideoNodeData>) {
   const { updateNode, setNodeResult } = useWorkflowStore();
   const { getEdges } = useReactFlow();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -23,9 +23,9 @@ function UploadImageNode({ id, data, selected }: NodeProps<UploadImageNodeData>)
   const [error, setError] = useState<string | undefined>(data?.error);
 
   // Ensure data exists with defaults
-  const nodeData: UploadImageNodeData = {
-    imageUrl: data?.imageUrl ?? null,
-    label: data?.label ?? "Upload Image",
+  const nodeData: UploadVideoNodeData = {
+    videoUrl: data?.videoUrl ?? null,
+    label: data?.label ?? "Upload Video",
     isUploading: isUploading,
     error: error,
   };
@@ -54,10 +54,10 @@ function UploadImageNode({ id, data, selected }: NodeProps<UploadImageNodeData>)
         return;
       }
 
-      // Validate file size (e.g., max 10MB)
-      const maxSize = 10 * 1024 * 1024; // 10MB
+      // Validate file size (e.g., max 500MB for videos)
+      const maxSize = 500 * 1024 * 1024; // 500MB
       if (file.size > maxSize) {
-        const errorMsg = "File size exceeds 10MB limit";
+        const errorMsg = "File size exceeds 500MB limit";
         setError(errorMsg);
         updateNode(id, {
           data: {
@@ -77,7 +77,7 @@ function UploadImageNode({ id, data, selected }: NodeProps<UploadImageNodeData>)
         formData.append("file", file);
 
         // Upload to our API route
-        const response = await fetch("/api/upload-image", {
+        const response = await fetch("/api/upload-video", {
           method: "POST",
           body: formData,
         });
@@ -88,9 +88,9 @@ function UploadImageNode({ id, data, selected }: NodeProps<UploadImageNodeData>)
         }
 
         const result = await response.json();
-        const imageUrl = result.url;
+        const videoUrl = result.url;
 
-        if (!imageUrl) {
+        if (!videoUrl) {
           throw new Error("No URL returned from upload");
         }
 
@@ -98,7 +98,7 @@ function UploadImageNode({ id, data, selected }: NodeProps<UploadImageNodeData>)
         updateNode(id, {
           data: {
             ...nodeData,
-            imageUrl,
+            videoUrl,
             isUploading: false,
             error: undefined,
           },
@@ -106,7 +106,7 @@ function UploadImageNode({ id, data, selected }: NodeProps<UploadImageNodeData>)
 
         // Store in Zustand as node result
         setNodeResult(id, {
-          output: imageUrl,
+          output: videoUrl,
           timestamp: Date.now(),
         });
 
@@ -132,11 +132,11 @@ function UploadImageNode({ id, data, selected }: NodeProps<UploadImageNodeData>)
     [id, nodeData, updateNode, setNodeResult]
   );
 
-  const handleRemoveImage = useCallback(() => {
+  const handleRemoveVideo = useCallback(() => {
     updateNode(id, {
       data: {
         ...nodeData,
-        imageUrl: null,
+        videoUrl: null,
         error: undefined,
       },
     });
@@ -173,26 +173,29 @@ function UploadImageNode({ id, data, selected }: NodeProps<UploadImageNodeData>)
         <input
           ref={fileInputRef}
           type="file"
-          accept={ACCEPTED_FILE_TYPES.join(",")}
+          accept={ACCEPTED_FILE_TYPES.join(",") + "," + ACCEPTED_FILE_EXTENSIONS.join(",")}
           onChange={handleFileSelect}
           className="hidden"
           disabled={hasInputConnection || isUploading}
         />
 
-        {nodeData.imageUrl ? (
+        {nodeData.videoUrl ? (
           <div className="relative">
-            <div className="relative w-full h-32 bg-gray-100 rounded border overflow-hidden">
-              <img
-                src={nodeData.imageUrl}
-                alt="Uploaded"
-                className="w-full h-full object-contain"
-              />
+            <div className="relative w-full bg-gray-100 rounded border overflow-hidden">
+              <video
+                src={nodeData.videoUrl}
+                controls
+                className="w-full max-h-48 object-contain"
+                preload="metadata"
+              >
+                Your browser does not support the video tag.
+              </video>
               {!hasInputConnection && (
                 <button
-                  onClick={handleRemoveImage}
+                  onClick={handleRemoveVideo}
                   className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
                   type="button"
-                  aria-label="Remove image"
+                  aria-label="Remove video"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -221,7 +224,7 @@ function UploadImageNode({ id, data, selected }: NodeProps<UploadImageNodeData>)
                 </>
               ) : (
                 <>
-                  <Upload className="w-5 h-5" />
+                  <Video className="w-5 h-5" />
                   <span className="text-xs">Click to upload</span>
                   <span className="text-xs text-gray-500">
                     {ACCEPTED_FILE_EXTENSIONS.join(", ")}
@@ -245,4 +248,4 @@ function UploadImageNode({ id, data, selected }: NodeProps<UploadImageNodeData>)
   );
 }
 
-export default memo(UploadImageNode);
+export default memo(UploadVideoNode);

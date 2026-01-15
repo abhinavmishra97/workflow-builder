@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -17,6 +17,11 @@ import "reactflow/dist/style.css";
 import { useWorkflowStore } from "@/store/workflowStore";
 import TextNode, { type TextNodeData } from "@/components/nodes/TextNode";
 import UploadImageNode from "@/components/nodes/UploadImageNode";
+import UploadVideoNode from "@/components/nodes/UploadVideoNode";
+import LLMNode from "@/components/nodes/LLMNode";
+import CropImageNode from "@/components/nodes/CropImageNode";
+import ExtractFrameNode from "@/components/nodes/ExtractFrameNode";
+import NodePalette from "@/components/NodePalette";
 
 const fitViewOptions: FitViewOptions = {
   padding: 0.2,
@@ -26,6 +31,10 @@ const fitViewOptions: FitViewOptions = {
 const nodeTypes = {
   text: TextNode,
   uploadImage: UploadImageNode,
+  uploadVideo: UploadVideoNode,
+  llm: LLMNode,
+  cropImage: CropImageNode,
+  extractFrame: ExtractFrameNode,
 };
 
 export default function WorkflowCanvas() {
@@ -59,7 +68,8 @@ export default function WorkflowCanvas() {
   );
 
   return (
-    <div className="h-screen w-full">
+    <div className="h-screen w-full relative">
+      <NodePalette />
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -74,13 +84,7 @@ export default function WorkflowCanvas() {
         maxZoom={2}
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
       >
-        <Background
-          patternId="dots"
-          gap={20}
-          size={1}
-          color="#e5e7eb"
-          className="opacity-50"
-        />
+        <Background gap={20} size={1} />
         <Controls />
         <MiniMap
           nodeColor="#3b82f6"
