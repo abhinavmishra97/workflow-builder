@@ -1,6 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import WorkflowCanvas from "@/components/WorkflowCanvas";
+import { getExecutionOrder } from "@/lib/dag";
+
 
 export default async function WorkflowPage() {
   const { userId } = await auth();
@@ -11,6 +13,7 @@ export default async function WorkflowPage() {
 
   return (
     <main className="h-screen w-full">
+      
       <WorkflowCanvas />
     </main>
   );
