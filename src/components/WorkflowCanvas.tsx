@@ -138,14 +138,30 @@ export default function WorkflowCanvas() {
             minZoom={0.1}
             maxZoom={2}
             defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+            proOptions={{ hideAttribution: true }}
           >
-            <Background gap={20} size={1} />
-            <Controls />
+            <Background
+              gap={24}
+              size={1.5}
+              color="var(--border)"
+            />
+            <Controls
+              style={{
+                backgroundColor: "var(--card)",
+                border: "1px solid var(--border)",
+                borderRadius: "8px",
+              }}
+            />
             <MiniMap
-              nodeStrokeWidth={3}
+              nodeStrokeWidth={2}
               position="bottom-right"
               pannable
               zoomable
+              style={{
+                backgroundColor: "var(--card)",
+                border: "1px solid var(--border)",
+                borderRadius: "8px",
+              }}
             />
           </ReactFlow>
         </div>

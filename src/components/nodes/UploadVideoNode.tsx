@@ -3,7 +3,7 @@
 import { memo, useCallback, useRef, useState } from "react";
 import { Handle, Position, useReactFlow, type NodeProps } from "reactflow";
 import { useWorkflowStore } from "@/store/workflowStore";
-import { Upload, Video, X } from "lucide-react";
+import { Video, X } from "lucide-react";
 
 export type UploadVideoNodeData = {
   videoUrl: string | null;
@@ -24,7 +24,6 @@ function UploadVideoNode({ id, data, selected }: NodeProps<UploadVideoNodeData>)
   
   const status = nodeStatus[id] || "idle";
 
-  // Ensure data exists with defaults
   const nodeData: UploadVideoNodeData = {
     videoUrl: data?.videoUrl ?? null,
     label: data?.label ?? "Upload Video",
@@ -32,7 +31,6 @@ function UploadVideoNode({ id, data, selected }: NodeProps<UploadVideoNodeData>)
     error: error,
   };
 
-  // Check if input handle is connected using React Flow API
   const edges = getEdges();
   const hasInputConnection = edges.some(
     (edge) => edge.target === id && edge.targetHandle === "input"
@@ -43,30 +41,18 @@ function UploadVideoNode({ id, data, selected }: NodeProps<UploadVideoNodeData>)
       const file = e.target.files?.[0];
       if (!file) return;
 
-      // Validate file type
       if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
         const errorMsg = `Invalid file type. Accepted types: ${ACCEPTED_FILE_EXTENSIONS.join(", ")}`;
         setError(errorMsg);
-        updateNode(id, {
-          data: {
-            ...nodeData,
-            error: errorMsg,
-          },
-        });
+        updateNode(id, { data: { ...nodeData, error: errorMsg } });
         return;
       }
 
-      // Validate file size (e.g., max 500MB for videos)
-      const maxSize = 500 * 1024 * 1024; // 500MB
+      const maxSize = 500 * 1024 * 1024;
       if (file.size > maxSize) {
         const errorMsg = "File size exceeds 500MB limit";
         setError(errorMsg);
-        updateNode(id, {
-          data: {
-            ...nodeData,
-            error: errorMsg,
-          },
-        });
+        updateNode(id, { data: { ...nodeData, error: errorMsg } });
         return;
       }
 
@@ -74,11 +60,9 @@ function UploadVideoNode({ id, data, selected }: NodeProps<UploadVideoNodeData>)
       setError(undefined);
 
       try {
-        // Create FormData
         const formData = new FormData();
         formData.append("file", file);
 
-        // Upload to our API route
         const response = await fetch("/api/upload-video", {
           method: "POST",
           body: formData,
@@ -96,36 +80,20 @@ function UploadVideoNode({ id, data, selected }: NodeProps<UploadVideoNodeData>)
           throw new Error("No URL returned from upload");
         }
 
-        // Update node data
         updateNode(id, {
-          data: {
-            ...nodeData,
-            videoUrl,
-            isUploading: false,
-            error: undefined,
-          },
+          data: { ...nodeData, videoUrl, isUploading: false, error: undefined },
         });
 
-        // Store in Zustand as node result
-        setNodeResult(id, {
-          output: videoUrl,
-          timestamp: Date.now(),
-        });
-
+        setNodeResult(id, { output: videoUrl, timestamp: Date.now() });
         setIsUploading(false);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Upload failed";
         setError(errorMessage);
         setIsUploading(false);
         updateNode(id, {
-          data: {
-            ...nodeData,
-            isUploading: false,
-            error: errorMessage,
-          },
+          data: { ...nodeData, isUploading: false, error: errorMessage },
         });
       } finally {
-        // Reset file input
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }
@@ -135,17 +103,8 @@ function UploadVideoNode({ id, data, selected }: NodeProps<UploadVideoNodeData>)
   );
 
   const handleRemoveVideo = useCallback(() => {
-    updateNode(id, {
-      data: {
-        ...nodeData,
-        videoUrl: null,
-        error: undefined,
-      },
-    });
-    setNodeResult(id, {
-      output: null,
-      timestamp: Date.now(),
-    });
+    updateNode(id, { data: { ...nodeData, videoUrl: null, error: undefined } });
+    setNodeResult(id, { output: null, timestamp: Date.now() });
     setError(undefined);
   }, [id, nodeData, updateNode, setNodeResult]);
 
@@ -155,39 +114,78 @@ function UploadVideoNode({ id, data, selected }: NodeProps<UploadVideoNodeData>)
     }
   }, [hasInputConnection, isUploading]);
 
-  // Determine border color based on status
-  const getBorderColor = () => {
-    if (status === "running") return "border-yellow-500 animate-pulse";
-    if (status === "success") return "border-green-500";
-    if (status === "failed") return "border-red-500";
-    if (selected) return "border-blue-500";
-    return "border-gray-300";
+  const getStatusStyle = () => {
+    if (status === "running") {
+      return {
+        borderColor: "var(--warning)",
+        boxShadow: "0 0 0 2px var(--warning), 0 4px 12px rgba(250, 204, 21, 0.3)",
+      };
+    }
+    if (status === "success") {
+      return {
+        borderColor: "var(--success)",
+        boxShadow: "0 0 0 2px var(--success), 0 4px 12px rgba(34, 197, 94, 0.3)",
+      };
+    }
+    if (status === "failed") {
+      return {
+        borderColor: "var(--danger)",
+        boxShadow: "0 0 0 2px var(--danger), 0 4px 12px rgba(239, 68, 68, 0.3)",
+      };
+    }
+    if (selected) {
+      return {
+        borderColor: "var(--purple-glow)",
+        boxShadow: "0 0 0 2px var(--purple-glow)",
+      };
+    }
+    return { borderColor: "var(--border)", boxShadow: "none" };
   };
+
+  const statusStyle = getStatusStyle();
 
   return (
     <div
-      className={`px-4 py-3 shadow-lg rounded-lg bg-white border-2 min-w-[200px] ${getBorderColor()}`}
+      className="rounded-xl overflow-hidden min-w-[220px]"
+      style={{
+        backgroundColor: "var(--card)",
+        border: "1px solid",
+        ...statusStyle,
+      }}
     >
-      <div className="mb-2">
-        <div className="flex items-center justify-between mb-1">
-          <label className="block text-xs font-semibold text-gray-700">
-            {nodeData.label}
-          </label>
-          {status === "running" && (
-            <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
-          )}
-          {status === "success" && (
-            <div className="w-2 h-2 bg-green-500 rounded-full" />
-          )}
-          {status === "failed" && (
-            <div className="w-2 h-2 bg-red-500 rounded-full" />
-          )}
-        </div>
+      {/* Header */}
+      <div
+        className="px-4 py-2 border-b flex items-center justify-between"
+        style={{
+          backgroundColor: "var(--sidebar)",
+          borderColor: "var(--border)",
+        }}
+      >
+        <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+          {nodeData.label}
+        </span>
+        {status === "running" && (
+          <div
+            className="w-2 h-2 rounded-full animate-pulse"
+            style={{ backgroundColor: "var(--warning)" }}
+          />
+        )}
+        {status === "success" && (
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "var(--success)" }} />
+        )}
+        {status === "failed" && (
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "var(--danger)" }} />
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="p-4">
         <Handle
           type="target"
           position={Position.Left}
           id="input"
-          className="w-3 h-3 !bg-gray-400"
+          className="w-3 h-3"
+          style={{ backgroundColor: "var(--text-muted)" }}
         />
 
         <input
@@ -201,7 +199,13 @@ function UploadVideoNode({ id, data, selected }: NodeProps<UploadVideoNodeData>)
 
         {nodeData.videoUrl ? (
           <div className="relative">
-            <div className="relative w-full bg-gray-100 rounded border overflow-hidden">
+            <div
+              className="relative w-full rounded-lg border overflow-hidden"
+              style={{
+                backgroundColor: "var(--bg)",
+                borderColor: "var(--border)",
+              }}
+            >
               <video
                 src={nodeData.videoUrl}
                 controls
@@ -213,7 +217,17 @@ function UploadVideoNode({ id, data, selected }: NodeProps<UploadVideoNodeData>)
               {!hasInputConnection && (
                 <button
                   onClick={handleRemoveVideo}
-                  className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                  className="absolute top-1 right-1 p-1 rounded-full transition-colors"
+                  style={{
+                    backgroundColor: "var(--danger)",
+                    color: "var(--text-primary)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.opacity = "0.8";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.opacity = "1";
+                  }}
                   type="button"
                   aria-label="Remove video"
                 >
@@ -222,7 +236,9 @@ function UploadVideoNode({ id, data, selected }: NodeProps<UploadVideoNodeData>)
               )}
             </div>
             {error && (
-              <p className="mt-1 text-xs text-red-600">{error}</p>
+              <p className="mt-1 text-xs" style={{ color: "var(--danger)" }}>
+                {error}
+              </p>
             )}
           </div>
         ) : (
@@ -231,39 +247,60 @@ function UploadVideoNode({ id, data, selected }: NodeProps<UploadVideoNodeData>)
               onClick={handleClick}
               disabled={hasInputConnection || isUploading}
               type="button"
-              className={`w-full px-3 py-4 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-2 transition-colors ${
-                hasInputConnection || isUploading
-                  ? "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
-                  : "bg-white border-gray-400 text-gray-700 hover:border-blue-500 hover:bg-blue-50 cursor-pointer"
-              }`}
+              className="w-full px-3 py-4 border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-2 transition-colors"
+              style={{
+                backgroundColor:
+                  hasInputConnection || isUploading ? "var(--hover)" : "var(--bg)",
+                borderColor: hasInputConnection || isUploading ? "var(--border)" : "var(--purple-glow)",
+                color:
+                  hasInputConnection || isUploading ? "var(--text-muted)" : "var(--text-secondary)",
+                cursor: hasInputConnection || isUploading ? "not-allowed" : "pointer",
+              }}
+              onMouseEnter={(e) => {
+                if (!hasInputConnection && !isUploading) {
+                  e.currentTarget.style.backgroundColor = "var(--hover)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!hasInputConnection && !isUploading) {
+                  e.currentTarget.style.backgroundColor = "var(--bg)";
+                }
+              }}
             >
               {isUploading ? (
                 <>
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
+                  <div
+                    className="animate-spin rounded-full h-6 w-6 border-b-2"
+                    style={{ borderColor: "var(--purple-glow)" }}
+                  />
                   <span className="text-xs">Uploading...</span>
                 </>
               ) : (
                 <>
                   <Video className="w-5 h-5" />
                   <span className="text-xs">Click to upload</span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                     {ACCEPTED_FILE_EXTENSIONS.join(", ")}
                   </span>
                 </>
               )}
             </button>
             {error && (
-              <p className="mt-1 text-xs text-red-600">{error}</p>
+              <p className="mt-1 text-xs" style={{ color: "var(--danger)" }}>
+                {error}
+              </p>
             )}
           </div>
         )}
+
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="output"
+          className="w-3 h-3"
+          style={{ backgroundColor: "var(--purple-glow)" }}
+        />
       </div>
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="output"
-        className="w-3 h-3 !bg-blue-500"
-      />
     </div>
   );
 }

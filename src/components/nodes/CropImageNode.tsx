@@ -135,45 +135,80 @@ function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
     [id, nodeData, updateNode]
   );
 
-  // Determine border color based on status
-  const getBorderColor = () => {
-    if (status === "running") return "border-yellow-500 animate-pulse";
-    if (status === "success") return "border-green-500";
-    if (status === "failed") return "border-red-500";
-    if (selected) return "border-blue-500";
-    return "border-gray-300";
+  const getStatusStyle = () => {
+    if (status === "running") {
+      return {
+        borderColor: "var(--warning)",
+        boxShadow: "0 0 0 2px var(--warning), 0 4px 12px rgba(250, 204, 21, 0.3)",
+      };
+    }
+    if (status === "success") {
+      return {
+        borderColor: "var(--success)",
+        boxShadow: "0 0 0 2px var(--success), 0 4px 12px rgba(34, 197, 94, 0.3)",
+      };
+    }
+    if (status === "failed") {
+      return {
+        borderColor: "var(--danger)",
+        boxShadow: "0 0 0 2px var(--danger), 0 4px 12px rgba(239, 68, 68, 0.3)",
+      };
+    }
+    if (selected) {
+      return {
+        borderColor: "var(--purple-glow)",
+        boxShadow: "0 0 0 2px var(--purple-glow)",
+      };
+    }
+    return { borderColor: "var(--border)", boxShadow: "none" };
   };
+
+  const statusStyle = getStatusStyle();
 
   return (
     <div
-      className={`px-4 py-3 shadow-lg rounded-lg bg-white border-2 min-w-[250px] ${getBorderColor()}`}
+      className="rounded-xl overflow-hidden min-w-[260px]"
+      style={{
+        backgroundColor: "var(--card)",
+        border: "1px solid",
+        ...statusStyle,
+      }}
     >
-      <div className="mb-2">
-        <div className="flex items-center justify-between mb-1">
-          <label className="flex items-center gap-1 text-xs font-semibold text-gray-900">
-            <Crop className="w-3 h-3" />
-            {nodeData.label}
-          </label>
-          {status === "running" && (
-            <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
-          )}
-          {status === "success" && (
-            <div className="w-2 h-2 bg-green-500 rounded-full" />
-          )}
-          {status === "failed" && (
-            <div className="w-2 h-2 bg-red-500 rounded-full" />
-          )}
-        </div>
+      {/* Header */}
+      <div
+        className="px-4 py-2 border-b flex items-center justify-between"
+        style={{
+          backgroundColor: "var(--sidebar)",
+          borderColor: "var(--border)",
+        }}
+      >
+        <span className="flex items-center gap-1 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+          <Crop className="w-3 h-3" />
+          {nodeData.label}
+        </span>
+        {status === "running" && (
+          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: "var(--warning)" }} />
+        )}
+        {status === "success" && (
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "var(--success)" }} />
+        )}
+        {status === "failed" && (
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "var(--danger)" }} />
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="p-4">
 
         {/* Image Input */}
-        <div className="mb-2">
-          <label className="block text-xs text-gray-900 mb-1">Image URL</label>
+        <div className="mb-3">
+          <label className="block text-xs mb-1" style={{ color: "var(--text-secondary)" }}>Image URL</label>
           <Handle
             type="target"
             position={Position.Left}
             id="image"
-            className="w-3 h-3 !bg-gray-400"
-            style={{ top: "20%" }}
+            className="w-3 h-3"
+            style={{ backgroundColor: "var(--text-muted)", top: "20%" }}
           />
           <input
             type="text"
@@ -181,24 +216,26 @@ function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
             onChange={handleImageUrlChange}
             disabled={hasImageConnection}
             placeholder="Enter image URL or connect..."
-            className={`w-full px-2 py-1.5 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              hasImageConnection
-                ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                : "bg-white text-gray-900"
-            }`}
+            className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none transition-all"
+            style={{
+              backgroundColor: hasImageConnection ? "var(--hover)" : "var(--bg)",
+              color: hasImageConnection ? "var(--text-muted)" : "var(--text-primary)",
+              border: "1px solid var(--border)",
+              cursor: hasImageConnection ? "not-allowed" : "text",
+            }}
           />
           {hasImageConnection && aggregatedImageUrl && (
-            <div className="mt-1 text-xs text-green-600">✓ Image connected</div>
+            <div className="mt-1 text-xs" style={{ color: "var(--success)" }}>✓ Image connected</div>
           )}
         </div>
 
         {/* Crop Parameters */}
-        <div className="mb-2 space-y-2">
-          <label className="block text-xs text-gray-900 mb-1">Crop Parameters (%)</label>
+        <div className="mb-3 space-y-2">
+          <label className="block text-xs mb-1" style={{ color: "var(--text-secondary)" }}>Crop Parameters (%)</label>
           
           {/* X Percent */}
           <div>
-            <label className="block text-xs text-gray-900 mb-0.5">X Position</label>
+            <label className="block text-xs mb-0.5" style={{ color: "var(--text-secondary)" }}>X Position</label>
             <input
               type="number"
               value={nodeData.xPercent}
@@ -206,13 +243,18 @@ function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
               min={0}
               max={100}
               step={0.1}
-              className="w-full px-2 py-1 text-xs border rounded text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none transition-all"
+              style={{
+                backgroundColor: "var(--bg)",
+                color: "var(--text-primary)",
+                border: "1px solid var(--border)",
+              }}
             />
           </div>
 
           {/* Y Percent */}
           <div>
-            <label className="block text-xs text-gray-900 mb-0.5">Y Position</label>
+            <label className="block text-xs mb-0.5" style={{ color: "var(--text-secondary)" }}>Y Position</label>
             <input
               type="number"
               value={nodeData.yPercent}
@@ -220,13 +262,18 @@ function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
               min={0}
               max={100}
               step={0.1}
-              className="w-full px-2 py-1 text-xs border rounded text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none transition-all"
+              style={{
+                backgroundColor: "var(--bg)",
+                color: "var(--text-primary)",
+                border: "1px solid var(--border)",
+              }}
             />
           </div>
 
           {/* Width Percent */}
           <div>
-            <label className="block text-xs text-gray-900 mb-0.5">Width</label>
+            <label className="block text-xs mb-0.5" style={{ color: "var(--text-secondary)" }}>Width</label>
             <input
               type="number"
               value={nodeData.widthPercent}
@@ -234,13 +281,18 @@ function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
               min={0}
               max={100}
               step={0.1}
-              className="w-full px-2 py-1 text-xs border rounded text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none transition-all"
+              style={{
+                backgroundColor: "var(--bg)",
+                color: "var(--text-primary)",
+                border: "1px solid var(--border)",
+              }}
             />
           </div>
 
           {/* Height Percent */}
           <div>
-            <label className="block text-xs text-gray-900 mb-0.5">Height</label>
+            <label className="block text-xs mb-0.5" style={{ color: "var(--text-secondary)" }}>Height</label>
             <input
               type="number"
               value={nodeData.heightPercent}
@@ -248,14 +300,26 @@ function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
               min={0}
               max={100}
               step={0.1}
-              className="w-full px-2 py-1 text-xs border rounded text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none transition-all"
+              style={{
+                backgroundColor: "var(--bg)",
+                color: "var(--text-primary)",
+                border: "1px solid var(--border)",
+              }}
             />
           </div>
         </div>
 
         {/* Preview Info */}
         {aggregatedImageUrl && (
-          <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-900">
+          <div
+            className="mt-2 p-3 rounded-lg text-xs"
+            style={{
+              backgroundColor: "var(--hover)",
+              color: "var(--text-secondary)",
+              border: "1px solid var(--border)",
+            }}
+          >
             <div>Crop: {nodeData.xPercent}%, {nodeData.yPercent}%</div>
             <div>Size: {nodeData.widthPercent}% × {nodeData.heightPercent}%</div>
           </div>
@@ -267,7 +331,8 @@ function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
         type="source"
         position={Position.Right}
         id="output"
-        className="w-3 h-3 !bg-blue-500"
+        className="w-3 h-3"
+        style={{ backgroundColor: "var(--purple-glow)" }}
       />
     </div>
   );

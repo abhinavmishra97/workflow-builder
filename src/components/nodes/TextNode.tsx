@@ -40,59 +40,111 @@ function TextNode({ id, data, selected }: NodeProps<TextNodeData>) {
     [id, nodeData, updateNode]
   );
 
-  // Determine border color based on status
-  const getBorderColor = () => {
-    if (status === "running") return "border-yellow-500 animate-pulse";
-    if (status === "success") return "border-green-500";
-    if (status === "failed") return "border-red-500";
-    if (selected) return "border-blue-500";
-    return "border-gray-300";
+  // Get status styling
+  const getStatusStyle = () => {
+    if (status === "running") {
+      return {
+        borderColor: "var(--warning)",
+        boxShadow: "0 0 0 2px var(--warning), 0 4px 12px rgba(250, 204, 21, 0.3)",
+      };
+    }
+    if (status === "success") {
+      return {
+        borderColor: "var(--success)",
+        boxShadow: "0 0 0 2px var(--success), 0 4px 12px rgba(34, 197, 94, 0.3)",
+      };
+    }
+    if (status === "failed") {
+      return {
+        borderColor: "var(--danger)",
+        boxShadow: "0 0 0 2px var(--danger), 0 4px 12px rgba(239, 68, 68, 0.3)",
+      };
+    }
+    if (selected) {
+      return {
+        borderColor: "var(--purple-glow)",
+        boxShadow: "0 0 0 2px var(--purple-glow)",
+      };
+    }
+    return {
+      borderColor: "var(--border)",
+      boxShadow: "none",
+    };
   };
+
+  const statusStyle = getStatusStyle();
 
   return (
     <div
-      className={`px-4 py-3 shadow-lg rounded-lg bg-white border-2 min-w-[200px] ${getBorderColor()}`}
+      className="rounded-xl overflow-hidden min-w-[220px]"
+      style={{
+        backgroundColor: "var(--card)",
+        border: "1px solid",
+        ...statusStyle,
+      }}
     >
-      <div className="mb-2">
-        <div className="flex items-center justify-between mb-1">
-          <label className="block text-xs font-semibold text-gray-700">
-            {nodeData.label}
-          </label>
-          {status === "running" && (
-            <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
-          )}
-          {status === "success" && (
-            <div className="w-2 h-2 bg-green-500 rounded-full" />
-          )}
-          {status === "failed" && (
-            <div className="w-2 h-2 bg-red-500 rounded-full" />
-          )}
-        </div>
+      {/* Header */}
+      <div
+        className="px-4 py-2 border-b flex items-center justify-between"
+        style={{
+          backgroundColor: "var(--sidebar)",
+          borderColor: "var(--border)",
+        }}
+      >
+        <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+          {nodeData.label}
+        </span>
+        {status === "running" && (
+          <div
+            className="w-2 h-2 rounded-full animate-pulse"
+            style={{ backgroundColor: "var(--warning)" }}
+          />
+        )}
+        {status === "success" && (
+          <div
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: "var(--success)" }}
+          />
+        )}
+        {status === "failed" && (
+          <div
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: "var(--danger)" }}
+          />
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="p-4">
         <Handle
           type="target"
           position={Position.Left}
           id="input"
-          className="w-3 h-3 !bg-gray-400"
+          className="w-3 h-3"
+          style={{ backgroundColor: "var(--text-muted)" }}
         />
         <textarea
           value={nodeData.value}
           onChange={handleChange}
           disabled={hasInputConnection}
           placeholder="Enter text..."
-          className={`w-full px-2 py-1.5 text-sm border rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            hasInputConnection
-              ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-              : "bg-white text-gray-900"
-          }`}
+          className="w-full px-3 py-2 text-sm rounded-lg resize-none focus:outline-none transition-all"
+          style={{
+            backgroundColor: hasInputConnection ? "var(--hover)" : "var(--bg)",
+            color: hasInputConnection ? "var(--text-muted)" : "var(--text-primary)",
+            border: "1px solid var(--border)",
+            cursor: hasInputConnection ? "not-allowed" : "text",
+          }}
           rows={3}
         />
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="output"
+          className="w-3 h-3"
+          style={{ backgroundColor: "var(--purple-glow)" }}
+        />
       </div>
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="output"
-        className="w-3 h-3 !bg-blue-500"
-      />
     </div>
   );
 }

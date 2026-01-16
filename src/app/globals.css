@@ -60,30 +60,86 @@ body {
 }
 
 /* React Flow Canvas Styling */
+.react-flow {
+  background-color: var(--bg) !important;
+}
+
 .react-flow__background {
   background-color: var(--bg) !important;
 }
 
+/* Edges - Purple with smooth curves */
 .react-flow__edge-path {
   stroke: var(--purple-glow);
   stroke-width: 2;
+  transition: stroke-width 0.2s ease;
 }
 
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke-width: 3;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+
+/* Animated edges for execution */
 .react-flow__edge.animated .react-flow__edge-path {
-  stroke-dasharray: 5;
-  animation: dashdraw 0.5s linear infinite;
+  stroke-dasharray: 8;
+  animation: dashdraw 0.8s linear infinite;
+  stroke: var(--accent);
+}
+
+/* Node floating effect */
+.react-flow__node {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.react-flow__node:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.2);
+}
+
+.react-flow__node.selected {
+  box-shadow: 0 0 0 2px var(--purple-glow);
+}
+
+/* Selection box */
+.react-flow__selection {
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid var(--purple-glow);
+}
+
+/* Controls styling */
+.react-flow__controls {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.react-flow__controls-button {
+  background-color: var(--hover) !important;
+  border-color: var(--border) !important;
+  color: var(--text-secondary) !important;
+  transition: all 0.2s ease;
+}
+
+.react-flow__controls-button:hover {
+  background-color: var(--card) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Hide scrollbars */
+.react-flow__pane {
+  overflow: hidden !important;
 }
 
 /* React Flow MiniMap Styling */
 .react-flow__minimap {
-  background-color: var(--card) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 8px !important;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
 
 .react-flow__minimap-mask {
-  fill: rgba(139, 92, 246, 0.25) !important;
+  fill: rgba(139, 92, 246, 0.15) !important;
   stroke: var(--purple-glow) !important;
   stroke-width: 2px !important;
 }
@@ -91,21 +147,22 @@ body {
 .react-flow__minimap-node {
   fill: var(--purple-glow) !important;
   stroke: #A78BFA !important;
-  stroke-width: 2px !important;
+  stroke-width: 1px !important;
 }
 
 .react-flow__minimap-node.selected {
-  fill: var(--success) !important;
-  stroke: #4ADE80 !important;
+  fill: var(--accent) !important;
+  stroke: var(--success) !important;
 }
 
 .react-flow__minimap-edge {
   stroke: var(--purple-glow) !important;
-  stroke-width: 2px !important;
+  stroke-width: 1px !important;
+  opacity: 0.6;
 }
 
 @keyframes dashdraw {
   to {
-    stroke-dashoffset: -10;
+    stroke-dashoffset: -16;
   }
 }
