@@ -25,7 +25,7 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
 
   // Ensure data exists with defaults
   const nodeData: LLMNodeData = {
-    model: data?.model ?? "gemini-1.5-pro",
+    model: data?.model ?? "gemini-pro",
     systemPrompt: data?.systemPrompt ?? "",
     userMessage: data?.userMessage ?? "",
     label: data?.label ?? "LLM",
@@ -224,31 +224,7 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
           </select>
         </div>
 
-        {/* System Prompt Input */}
-        <div className="mb-2">
-          <label className="block text-xs text-gray-600 mb-1">System Prompt (optional)</label>
-          <Handle
-            type="target"
-            position={Position.Left}
-            id="system_prompt"
-            className="w-3 h-3 bg-gray-400!"
-            style={{ top: "30%" }}
-          />
-          <textarea
-            value={hasSystemPromptConnection ? aggregatedInputs.systemPrompt : nodeData.systemPrompt}
-            onChange={handleSystemPromptChange}
-            disabled={hasSystemPromptConnection || isRunning}
-            placeholder="Enter system prompt..."
-            className={`w-full px-2 py-1.5 text-xs border rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              hasSystemPromptConnection || isRunning
-                ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                : "bg-white text-gray-900"
-            }`}
-            rows={2}
-          />
-        </div>
-
-        {/* User Message Input */}
+        {/* User Message Input - PRIMARY INPUT (moved to first position) */}
         <div className="mb-2">
           <label className="block text-xs text-gray-600 mb-1">
             User Message <span className="text-red-500">*</span>
@@ -258,7 +234,7 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
             position={Position.Left}
             id="user_message"
             className="w-3 h-3 !bg-gray-400"
-            style={{ top: "55%" }}
+            style={{ top: "30%" }}
           />
           <textarea
             value={hasUserMessageConnection ? aggregatedInputs.userMessage : nodeData.userMessage}
@@ -271,6 +247,30 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
                 : "bg-white text-gray-900"
             }`}
             rows={3}
+          />
+        </div>
+
+        {/* System Prompt Input - OPTIONAL (moved to second position) */}
+        <div className="mb-2">
+          <label className="block text-xs text-gray-600 mb-1">System Prompt (optional)</label>
+          <Handle
+            type="target"
+            position={Position.Left}
+            id="system_prompt"
+            className="w-3 h-3 bg-gray-400!"
+            style={{ top: "55%" }}
+          />
+          <textarea
+            value={hasSystemPromptConnection ? aggregatedInputs.systemPrompt : nodeData.systemPrompt}
+            onChange={handleSystemPromptChange}
+            disabled={hasSystemPromptConnection || isRunning}
+            placeholder="Enter system prompt..."
+            className={`w-full px-2 py-1.5 text-xs border rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              hasSystemPromptConnection || isRunning
+                ? "bg-gray-100 text-gray-500 cursor-not-allowed"
+                : "bg-white text-gray-900"
+            }`}
+            rows={2}
           />
         </div>
 

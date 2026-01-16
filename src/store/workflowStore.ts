@@ -61,6 +61,13 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
       return;
     }
 
+    console.log('[connectNodes] Creating connection:', {
+      source: connection.source,
+      target: connection.target,
+      sourceHandle: connection.sourceHandle,
+      targetHandle: connection.targetHandle
+    });
+
     const edge: Edge = {
       id: `${connection.source}-${connection.target}`,
       source: connection.source,
@@ -159,7 +166,7 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
 
   executeWorkflow: async () => {
     const state = get();
-    
+
     // Don't execute if already running
     if (state.isExecuting) {
       return;

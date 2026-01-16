@@ -6,16 +6,20 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "trigger:dev": "trigger-dev dev"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.7",
+    "@google/generative-ai": "^0.24.1",
+    "@trigger.dev/nextjs": "3.3.12",
+    "@trigger.dev/sdk": "3.3.12",
     "lucide-react": "^0.562.0",
     "next": "16.1.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "reactflow": "^11.11.4",
-    "zod": "^4.3.5",
+    "zod": "^3.24.1",
     "zustand": "^5.0.10"
   },
   "devDependencies": {
@@ -25,7 +29,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
-    "tailwindcss": "^4",
+    "trigger.dev": "3.3.12",
     "typescript": "^5"
   }
 }
