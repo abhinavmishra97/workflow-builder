@@ -3,6 +3,14 @@
 import { useCallback } from "react";
 import { useWorkflowStore } from "@/store/workflowStore";
 import {
+  Type,
+  Image,
+  Video,
+  Crop,
+  Film,
+  Sparkles,
+} from "lucide-react";
+import {
   createTextNode,
   createUploadImageNode,
   createUploadVideoNode,
@@ -15,36 +23,42 @@ const nodeTypes = [
   {
     type: "text",
     label: "Text",
+    icon: Type,
     createNode: (id: string, position: { x: number; y: number }) =>
       createTextNode(id, position),
   },
   {
     type: "uploadImage",
     label: "Upload Image",
+    icon: Image,
     createNode: (id: string, position: { x: number; y: number }) =>
       createUploadImageNode(id, position),
   },
   {
     type: "uploadVideo",
     label: "Upload Video",
+    icon: Video,
     createNode: (id: string, position: { x: number; y: number }) =>
       createUploadVideoNode(id, position),
   },
   {
     type: "cropImage",
     label: "Crop Image",
+    icon: Crop,
     createNode: (id: string, position: { x: number; y: number }) =>
       createCropImageNode(id, position),
   },
   {
     type: "extractFrame",
     label: "Extract Frame",
+    icon: Film,
     createNode: (id: string, position: { x: number; y: number }) =>
       createExtractFrameNode(id, position),
   },
   {
     type: "llm",
     label: "LLM",
+    icon: Sparkles,
     createNode: (id: string, position: { x: number; y: number }) =>
       createLLMNode(id, position),
   },
@@ -68,20 +82,52 @@ export default function NodePalette() {
   );
 
   return (
-    <div className="absolute left-4 top-4 z-10 bg-white rounded-lg shadow-md border border-gray-300 p-3 min-w-[180px]">
-      <h2 className="text-sm font-semibold mb-3 text-gray-700 uppercase tracking-wide">
-        Nodes
-      </h2>
-      <div className="space-y-1.5">
-        {nodeTypes.map((nodeType) => (
-          <button
-            key={nodeType.type}
-            onClick={() => handleAddNode(nodeType.type, nodeType.createNode)}
-            className="w-full flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 transition-colors"
-          >
-            <span>{nodeType.label}</span>
-          </button>
-        ))}
+    <div
+      className="h-full flex flex-col py-4 border-r"
+      style={{
+        width: "64px",
+        backgroundColor: "var(--sidebar)",
+        borderColor: "var(--border)",
+      }}
+    >
+      <div className="flex flex-col gap-2 px-2">
+        {nodeTypes.map((nodeType) => {
+          const Icon = nodeType.icon;
+          return (
+            <button
+              key={nodeType.type}
+              onClick={() => handleAddNode(nodeType.type, nodeType.createNode)}
+              className="group relative w-12 h-12 rounded-lg flex items-center justify-center transition-all"
+              style={{
+                backgroundColor: "transparent",
+                color: "var(--text-secondary)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--hover)";
+                e.currentTarget.style.color = "var(--text-primary)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.color = "var(--text-secondary)";
+              }}
+              title={nodeType.label}
+            >
+              <Icon className="w-5 h-5" />
+              
+              {/* Tooltip */}
+              <div
+                className="absolute left-full ml-2 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50"
+                style={{
+                  backgroundColor: "var(--card)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border)",
+                }}
+              >
+                {nodeType.label}
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
