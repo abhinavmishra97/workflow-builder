@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Plus, 
@@ -13,11 +13,14 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  LogOut
+  LogOut,
+  Edit,
+  Menu,
+  X
 } from "lucide-react";
 import Image from "next/image";
 
-// Mock data - will be replaced with Prisma later
+// Mock data for workflow library (templates)
 const mockWorkflowLibrary = [
   { id: "1", name: "Weavy Welcome", thumbnail: "/imgs/headphones.png" },
   { id: "2", name: "Weavy Iterators", thumbnail: "/imgs/weavy-Flux%20Kontext%20Multi%20Image-2026-01-17%20at%2003.12.42.png" },
@@ -36,32 +39,39 @@ const mockWorkflowLibrary = [
   { id: "15", name: "Text to Speech", thumbnail: "/imgs/weavy-Google%20Imagen%204-2026-01-17%20at%2003.17.41.png" },
 ];
 
-const mockUserFiles = [
-  {
-    id: "file-1",
-    name: "untitled",
-    lastEdited: "41 minutes ago",
-    createdAt: "41 minutes ago",
-    type: "workflow"
-  },
-  {
-    id: "file-2",
-    name: "untitled",
-    lastEdited: "1 hour ago",
-    createdAt: "2 days ago",
-    type: "workflow"
-  },
-  {
-    id: "file-3",
-    name: "untitled",
-    lastEdited: "1 hour ago",
-    createdAt: "2 days ago",
-    type: "workflow"
-  },
-];
+interface WorkflowFile {
+  id: string;
+  name: string;
+  updatedAt: string;
+  createdAt: string;
+  runs?: Array<{
+    id: string;
+    status: string;
+    createdAt: string;
+  }>;
+}
 
 interface WorkspaceDashboardProps {
   userName?: string;
+}
+
+// Helper function to format dates
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days} day${days > 1 ? 's' : ''} ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} month${months > 1 ? 's' : ''} ago`;
+  const years = Math.floor(months / 12);
+  return `${years} year${years > 1 ? 's' : ''} ago`;
 }
 
 export default function WorkspaceDashboard({ userName = "Abhinav Mishra" }: WorkspaceDashboardProps) {
@@ -70,15 +80,52 @@ export default function WorkspaceDashboard({ userName = "Abhinav Mishra" }: Work
   const [scrollPosition, setScrollPosition] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [showLogoutDropdown, setShowLogoutDropdown] = useState(false);
+  const [userFiles, setUserFiles] = useState<WorkflowFile[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Fetch workflows from database
+  useEffect(() => {
+    fetchWorkflows();
+  }, []);
+
+  const fetchWorkflows = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/workflows');
+      if (response.ok) {
+        const data = await response.json();
+        setUserFiles(data);
+      }
+    } catch (error) {
+      console.error('Error fetching workflows:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleFileClick = (fileId: string) => {
     router.push(`/workflow/${fileId}`);
   };
 
-  const handleCreateNewFile = () => {
-    const newFileId = `workflow-${Date.now()}`;
-    router.push(`/workflow/${newFileId}`);
+  const handleCreateNewFile = async () => {
+    try {
+      const response = await fetch('/api/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Untitled Workflow' }),
+      });
+
+      if (response.ok) {
+        const newWorkflow = await response.json();
+        router.push(`/workflow/${newWorkflow.id}`);
+      }
+    } catch (error) {
+      console.error('Error creating workflow:', error);
+    }
   };
 
   const handleScrollLeft = () => {
@@ -100,7 +147,7 @@ export default function WorkspaceDashboard({ userName = "Abhinav Mishra" }: Work
   };
 
   // Filter files based on search query
-  const filteredFiles = mockUserFiles.filter(file =>
+  const filteredFiles = userFiles.filter(file =>
     file.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -108,23 +155,41 @@ export default function WorkspaceDashboard({ userName = "Abhinav Mishra" }: Work
     <div className="h-screen w-full flex" style={{ backgroundColor: "var(--bg)" }}>
       {/* Left Sidebar */}
       <div
-        className="w-[200px] flex flex-col border-r"
+        className="flex flex-col border-r transition-all duration-300"
         style={{
+          width: sidebarCollapsed ? "60px" : "200px",
           backgroundColor: "var(--sidebar)",
           borderColor: "var(--border)",
         }}
       >
-        {/* User Profile with Dropdown */}
-        <div className="p-5 relative">
+        {/* Toggle Button */}
+        <div className="p-3 flex justify-end">
           <button
-            onClick={() => setShowLogoutDropdown(!showLogoutDropdown)}
-            className="flex items-center gap-3 w-full hover:opacity-80 transition-opacity"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="p-2 rounded-lg hover:bg-opacity-10 transition-colors"
+            style={{ backgroundColor: "var(--hover)" }}
           >
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0"
-              style={{
-                backgroundColor: "var(--purple-glow)",
-                color: "var(--text-primary)",
+            {sidebarCollapsed ? (
+              <Menu className="w-5 h-5" style={{ color: "var(--text-primary)" }} />
+            ) : (
+              <X className="w-5 h-5" style={{ color: "var(--text-primary)" }} />
+            )}
+          </button>
+        </div>
+
+        {!sidebarCollapsed && (
+          <>
+            {/* User Profile with Dropdown */}
+            <div className="p-5 relative">
+              <button
+                onClick={() => setShowLogoutDropdown(!showLogoutDropdown)}
+                className="flex items-center gap-3 w-full hover:opacity-80 transition-opacity"
+              >
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0"
+                  style={{
+                    backgroundColor: "var(--purple-glow)",
+                    color: "var(--text-primary)",
               }}
             >
               {userName.charAt(0)}
@@ -249,6 +314,8 @@ export default function WorkspaceDashboard({ userName = "Abhinav Mishra" }: Work
             Discord
           </button>
         </div>
+          </>
+        )}
       </div>
 
       {/* Main Content */}
@@ -484,11 +551,11 @@ export default function WorkspaceDashboard({ userName = "Abhinav Mishra" }: Work
 
             {/* Grid View */}
             {viewMode === "grid" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                 {filteredFiles.map((file) => (
                   <div
                     key={file.id}
-                    className="rounded-lg overflow-hidden cursor-pointer transition-all hover:scale-105"
+                    className="rounded-lg overflow-visible cursor-pointer transition-transform hover:scale-105"
                     style={{
                       backgroundColor: "var(--card)",
                       border: "1px solid var(--border)",
@@ -503,7 +570,7 @@ export default function WorkspaceDashboard({ userName = "Abhinav Mishra" }: Work
                     </div>
                     <div className="p-3">
                       <p
-                        className="text-sm font-medium mb-1"
+                        className="text-sm font-medium mb-1 truncate"
                         style={{ color: "var(--text-primary)" }}
                       >
                         {file.name}
@@ -512,7 +579,7 @@ export default function WorkspaceDashboard({ userName = "Abhinav Mishra" }: Work
                         className="text-xs"
                         style={{ color: "var(--text-muted)" }}
                       >
-                        Last edited {file.lastEdited}
+                        Last edited {formatTimeAgo(file.updatedAt)}
                       </p>
                     </div>
                   </div>
@@ -568,7 +635,7 @@ export default function WorkspaceDashboard({ userName = "Abhinav Mishra" }: Work
                       -
                     </div>
                     <div className="col-span-3 text-sm" style={{ color: "var(--text-primary)" }}>
-                      {file.lastEdited}
+                      {formatTimeAgo(file.updatedAt)}
                     </div>
                     <div className="col-span-2 text-sm" style={{ color: "var(--text-primary)" }}>
                       {file.createdAt}
