@@ -62,7 +62,7 @@ export default function LandingPage() {
               </SignUpButton>
             </SignedOut>
             <SignedIn>
-              <Link href="/workflow">
+              <Link href="/app">
                 <button
                   className="px-4 py-2 rounded-lg font-medium transition-colors"
                   style={{
@@ -76,7 +76,7 @@ export default function LandingPage() {
                     e.currentTarget.style.opacity = "1";
                   }}
                 >
-                  Go to Workflow
+                  Start Now
                 </button>
               </Link>
             </SignedIn>
@@ -101,7 +101,7 @@ export default function LandingPage() {
           Create powerful multi-modal AI workflows with a simple drag-and-drop interface.
           Connect text, images, and LLMs to build complex automations in minutes.
         </p>
-        <Link href="/workflow">
+        <Link href="/app">
           <button
             className="px-8 py-4 rounded-lg text-lg font-semibold transition-all inline-flex items-center gap-2"
             style={{
@@ -117,7 +117,7 @@ export default function LandingPage() {
               e.currentTarget.style.boxShadow = "none";
             }}
           >
-            Start Building
+            Start Now
             <Sparkles className="w-5 h-5" />
           </button>
         </Link>

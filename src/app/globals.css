@@ -59,6 +59,26 @@ body {
   font-size: 14px;
 }
 
+/* Hide scrollbars globally while maintaining scroll functionality */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Workflow Library Card Hover Animations */
+.workflow-card {
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.workflow-card:hover {
+  transform: scale(1.05);
+  filter: brightness(1.15);
+}
+
 /* React Flow Canvas Styling */
 .react-flow {
   background-color: var(--bg) !important;
@@ -94,6 +114,13 @@ body {
 /* Node floating effect */
 .react-flow__node {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 12px !important;
+  overflow: visible !important;
+}
+
+.react-flow__node > div {
+  border-radius: 12px !important;
+  overflow: hidden;
 }
 
 .react-flow__node:hover {
@@ -105,10 +132,18 @@ body {
   box-shadow: 0 0 0 2px var(--purple-glow);
 }
 
-/* Selection box */
+.react-flow__node:focus,
+.react-flow__node:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--purple-glow);
+}
+
+/* Selection box - Marquee selection */
 .react-flow__selection {
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid var(--purple-glow);
+  background: rgba(139, 92, 246, 0.08);
+  border: 1.5px solid rgba(139, 92, 246, 0.5);
+  border-radius: 4px;
+  backdrop-filter: blur(2px);
 }
 
 /* Controls styling */
@@ -165,4 +200,35 @@ body {
   to {
     stroke-dashoffset: -16;
   }
+}
+
+/* Cursor styles for selection modes */
+.react-flow__pane {
+  cursor: inherit !important;
+}
+
+.react-flow__pane.dragging {
+  cursor: grabbing !important;
+}
+
+/* Pointer mode - nodes are selectable */
+.react-flow__node {
+  cursor: pointer !important;
+}
+
+.react-flow__node.dragging {
+  cursor: grabbing !important;
+}
+
+/* Hand mode - override cursors */
+.react-flow.hand-mode .react-flow__pane {
+  cursor: grab !important;
+}
+
+.react-flow.hand-mode .react-flow__pane.dragging {
+  cursor: grabbing !important;
+}
+
+.react-flow.hand-mode .react-flow__node {
+  cursor: grab !important;
 }

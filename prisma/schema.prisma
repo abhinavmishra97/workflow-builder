@@ -1,0 +1,64 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - linked to Clerk authentication
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique // Clerk user ID
+  email     String   @unique
+  name      String?
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  workflows WorkflowFile[]
+
+  @@index([clerkId])
+  @@index([email])
+}
+
+// WorkflowFile model - stores workflow metadata
+model WorkflowFile {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
+  content   Json?    // Stores the workflow graph/nodes as JSON
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  owner User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  runs  WorkflowRun[]
+
+  @@index([ownerId])
+  @@index([createdAt])
+}
+
+// WorkflowRun model - stores execution history
+model WorkflowRun {
+  id         String   @id @default(cuid())
+  workflowId String
+  status     String   // "running", "completed", "failed"
+  scope      String   // "full", "selected", "single"
+  duration   Int?     // Duration in milliseconds
+  results    Json?    // Execution results as JSON
+  error      String?  // Error message if failed
+  createdAt  DateTime @default(now())
+
+  // Relations
+  workflow WorkflowFile @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId])
+  @@index([status])
+  @@index([createdAt])
+}

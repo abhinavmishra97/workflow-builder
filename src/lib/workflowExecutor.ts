@@ -1,6 +1,6 @@
 import type { Node, Edge } from "reactflow";
 import { getExecutionOrder, CycleError } from "./dag";
-import type { NodeExecutionStatus } from "@/types/workflow";
+import type { NodeExecutionStatus, NodeResult } from "@/types/workflow";
 import type { LLMNodeData } from "@/components/nodes/LLMNode";
 
 export type ExecutionCallbacks = {
@@ -10,7 +10,7 @@ export type ExecutionCallbacks = {
   onWorkflowComplete?: () => void;
   onWorkflowError?: (error: Error) => void;
   setNodeStatus?: (nodeId: string, status: NodeExecutionStatus) => void;
-  setNodeResult?: (nodeId: string, result: unknown) => void;
+  setNodeResult?: (nodeId: string, result: Omit<NodeResult, "nodeId">) => void;
 };
 
 /**
@@ -373,7 +373,7 @@ export async function runWorkflow(
         completedNodes.add(node.id);
         currentResults[node.id] = { output: result };
         setNodeStatus?.(node.id, "success");
-        setNodeResult?.(node.id, result);
+        setNodeResult?.(node.id, { output: result, timestamp: Date.now() });
         onNodeComplete?.(node.id, result);
 
         // Check which dependent nodes can now execute

@@ -73,13 +73,26 @@ export default function NodePalette() {
       createNodeFn: (id: string, position: { x: number; y: number }) => any
     ) => {
       const id = `${nodeType}-${Date.now()}`;
-      // Default position - spread nodes around center
-      const position = { x: Math.random() * 400 + 100, y: Math.random() * 400 + 100 };
+      // Default position - center of canvas
+      const position = { x: 250, y: 150 };
       const newNode = createNodeFn(id, position);
       addNode(newNode);
     },
     [addNode]
   );
+
+  const onDragStart = (
+    event: React.DragEvent,
+    nodeType: string,
+    createNodeFn: (id: string, position: { x: number; y: number }) => any
+  ) => {
+    event.dataTransfer.setData("application/reactflow", nodeType);
+    event.dataTransfer.setData("nodeCreator", JSON.stringify({
+      type: nodeType,
+      timestamp: Date.now(),
+    }));
+    event.dataTransfer.effectAllowed = "move";
+  };
 
   return (
     <div
@@ -97,7 +110,9 @@ export default function NodePalette() {
             <button
               key={nodeType.type}
               onClick={() => handleAddNode(nodeType.type, nodeType.createNode)}
-              className="group relative w-12 h-12 rounded-lg flex items-center justify-center transition-all"
+              onDragStart={(e) => onDragStart(e, nodeType.type, nodeType.createNode)}
+              draggable
+              className="group relative w-12 h-12 rounded-lg flex items-center justify-center transition-all cursor-grab active:cursor-grabbing"
               style={{
                 backgroundColor: "transparent",
                 color: "var(--text-secondary)",
@@ -124,6 +139,9 @@ export default function NodePalette() {
                 }}
               >
                 {nodeType.label}
+                <div className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                  Click or drag
+                </div>
               </div>
             </button>
           );
