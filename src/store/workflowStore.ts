@@ -235,10 +235,7 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
           }
         },
         setNodeResult: (nodeId, result) => {
-          get().setNodeResult(nodeId, {
-            output: result,
-            timestamp: Date.now(),
-          });
+          get().setNodeResult(nodeId, result);
 
           // Update node result in history
           const nodeResult = nodeExecutionResults.find(r => r.nodeId === nodeId);
@@ -246,7 +243,7 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
             nodeResult.output = result;
           }
         },
-        onNodeError: (nodeId, error) => {
+        onNodeError: (nodeId: string, error: Error) => {
           const nodeResult = nodeExecutionResults.find(r => r.nodeId === nodeId);
           if (nodeResult) {
             nodeResult.error = error.message;

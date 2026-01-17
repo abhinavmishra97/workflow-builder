@@ -6,6 +6,7 @@ import type { LLMNodeData } from "@/components/nodes/LLMNode";
 export type ExecutionCallbacks = {
   setNodeStatus?: (nodeId: string, status: NodeExecutionStatus) => void;
   setNodeResult?: (nodeId: string, result: Omit<NodeResult, "nodeId">) => void;
+  onNodeError?: (nodeId: string, error: Error) => void;
   onWorkflowComplete?: () => void;
   onWorkflowError?: (error: Error) => void;
 };
@@ -21,7 +22,7 @@ export async function runWorkflow(
   callbacks: ExecutionCallbacks = {},
   workflowId?: string
 ): Promise<void> {
-  const { setNodeStatus, setNodeResult, onWorkflowComplete, onWorkflowError } =
+  const { setNodeStatus, setNodeResult, onNodeError, onWorkflowComplete, onWorkflowError } =
     callbacks;
 
   try {
@@ -80,6 +81,7 @@ export async function runWorkflow(
         const error = err as Error;
 
         setNodeStatus?.(node.id, "failed");
+        onNodeError?.(node.id, error);
 
         if (workflowRunId) {
           await fetch("/api/workflow/update-node", {
@@ -175,10 +177,42 @@ async function executeNode(
      CROP IMAGE
      ======================= */
   if (node.type === "cropImage") {
+    const data = node.data as {
+      imageUrl?: string | null;
+      xPercent?: number;
+      yPercent?: number;
+      widthPercent?: number;
+      heightPercent?: number;
+    };
+
+    // 🔑 Resolve imageUrl from connected node
+    let imageUrl = data.imageUrl;
+
+    const imageEdge = allEdges.find(
+      (e) => e.target === node.id && e.targetHandle === "image"
+    );
+
+    if (imageEdge) {
+      const sourceResult = nodeResults[imageEdge.source];
+      if (typeof sourceResult === "string") {
+        imageUrl = sourceResult;
+      }
+    }
+
+    if (!imageUrl) {
+      throw new Error("imageUrl is required");
+    }
+
     const res = await fetch("/api/trigger/crop-image", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(node.data),
+      body: JSON.stringify({
+        imageUrl,
+        xPercent: data.xPercent ?? 0,
+        yPercent: data.yPercent ?? 0,
+        widthPercent: data.widthPercent ?? 100,
+        heightPercent: data.heightPercent ?? 100,
+      }),
     });
 
     const result = await res.json();
@@ -189,6 +223,7 @@ async function executeNode(
 
     return result.croppedImageUrl;
   }
+
 
   /* =======================
      SIMPLE / MOCK NODES

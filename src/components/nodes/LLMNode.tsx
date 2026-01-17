@@ -192,13 +192,54 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
     [id, nodeData, updateNode]
   );
 
-  const handleRun = useCallback(() => {
-    // Set loading state (no actual execution yet)
+  const handleRun = useCallback(async () => {
+    // Set loading state
     setNodeStatus(id, "running");
     
-    // Simulate running state - in real implementation, this would trigger execution
-    // For now, we'll just set it to running and it will stay there until manually reset
-  }, [id, setNodeStatus]);
+    try {
+      // Get the user message (from connected node or direct input)
+      const userMessage = aggregatedInputs.userMessage || nodeData.userMessage;
+      
+      if (!userMessage?.trim()) {
+        throw new Error("User message is required");
+      }
+
+      // Call the LLM API
+      const response = await fetch("/api/trigger/execute-llm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemPrompt: aggregatedInputs.systemPrompt || nodeData.systemPrompt || undefined,
+          userMessage: userMessage.trim(),
+          model: nodeData.model || "gemini-2.5-flash",
+          imageUrls: aggregatedInputs.images.length > 0 ? aggregatedInputs.images : undefined,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "LLM execution failed");
+      }
+
+      // Store the result
+      useWorkflowStore.getState().setNodeResult(id, {
+        output: result.output,
+        timestamp: Date.now(),
+      });
+
+      setNodeStatus(id, "success");
+    } catch (error) {
+      console.error("[LLM Node] Execution error:", error);
+      setNodeStatus(id, "failed");
+      
+      // Optionally show error in result
+      useWorkflowStore.getState().setNodeResult(id, {
+        output: error instanceof Error ? error.message : "Execution failed",
+        timestamp: Date.now(),
+      });
+    }
+  }, [id, setNodeStatus, aggregatedInputs, nodeData]);
 
   // Get status styling
   const getStatusStyle = () => {
@@ -411,22 +452,40 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
           )}
         </button>
 
-        {/* Output Area */}
+        {/* Result Display - Shows directly on the node */}
         {outputText && (
-          <div className="mt-2 border rounded">
+          <div 
+            className="mt-3 border rounded-lg overflow-hidden"
+            style={{
+              borderColor: "var(--success)",
+              backgroundColor: "var(--bg)",
+            }}
+          >
             <button
               onClick={() => setIsOutputExpanded(!isOutputExpanded)}
-              className="w-full px-2 py-1.5 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 flex items-center justify-between rounded-t"
+              className="w-full px-3 py-2 text-xs font-semibold flex items-center justify-between transition-colors"
+              style={{
+                backgroundColor: "var(--success)",
+                color: "white",
+              }}
             >
-              <span>Output</span>
+              <span>✓ Result</span>
               {isOutputExpanded ? (
-                <ChevronUp className="w-3 h-3" />
+                <ChevronUp className="w-4 h-4" />
               ) : (
-                <ChevronDown className="w-3 h-3" />
+                <ChevronDown className="w-4 h-4" />
               )}
             </button>
             {isOutputExpanded && (
-              <div className="px-2 py-2 text-xs text-gray-700 bg-white max-h-48 overflow-y-auto rounded-b">
+              <div 
+                className="px-3 py-2 text-xs max-h-48 overflow-y-auto"
+                style={{
+                  color: "var(--text-primary)",
+                  backgroundColor: "var(--card)",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                }}
+              >
                 {outputText}
               </div>
             )}
