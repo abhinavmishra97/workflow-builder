@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useMemo, useState, useEffect } from "react";
 import { Handle, Position, useReactFlow, type NodeProps } from "reactflow";
 import { useWorkflowStore } from "@/store/workflowStore";
 import { Crop } from "lucide-react";
@@ -29,6 +29,20 @@ function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
     heightPercent: data?.heightPercent ?? 100,
     label: data?.label ?? "Crop Image",
   };
+
+  // Local state for number inputs to prevent continuous updates
+  const [localX, setLocalX] = useState(nodeData.xPercent);
+  const [localY, setLocalY] = useState(nodeData.yPercent);
+  const [localWidth, setLocalWidth] = useState(nodeData.widthPercent);
+  const [localHeight, setLocalHeight] = useState(nodeData.heightPercent);
+
+  // Sync local state when node data changes externally
+  useEffect(() => {
+    setLocalX(nodeData.xPercent);
+    setLocalY(nodeData.yPercent);
+    setLocalWidth(nodeData.widthPercent);
+    setLocalHeight(nodeData.heightPercent);
+  }, [nodeData.xPercent, nodeData.yPercent, nodeData.widthPercent, nodeData.heightPercent]);
 
   // Check if image input handle is connected using React Flow API
   const edges = getEdges();
@@ -73,67 +87,61 @@ function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
 
   const handleImageUrlChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
+      const node = nodes.find(n => n.id === id);
+      if (!node) return;
       updateNode(id, {
         data: {
-          ...nodeData,
+          ...node.data,
           imageUrl: e.target.value,
         },
       });
     },
-    [id, nodeData, updateNode]
+    [id, nodes, updateNode]
   );
 
-  const handleXPercentChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = parseFloat(e.target.value) || 0;
-      updateNode(id, {
-        data: {
-          ...nodeData,
-          xPercent: Math.max(0, Math.min(100, value)),
-        },
-      });
-    },
-    [id, nodeData, updateNode]
-  );
+  const updateXPercent = useCallback((value: number) => {
+    const node = nodes.find(n => n.id === id);
+    if (!node) return;
+    updateNode(id, {
+      data: {
+        ...node.data,
+        xPercent: Math.max(0, Math.min(100, value)),
+      },
+    });
+  }, [id, nodes, updateNode]);
 
-  const handleYPercentChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = parseFloat(e.target.value) || 0;
-      updateNode(id, {
-        data: {
-          ...nodeData,
-          yPercent: Math.max(0, Math.min(100, value)),
-        },
-      });
-    },
-    [id, nodeData, updateNode]
-  );
+  const updateYPercent = useCallback((value: number) => {
+    const node = nodes.find(n => n.id === id);
+    if (!node) return;
+    updateNode(id, {
+      data: {
+        ...node.data,
+        yPercent: Math.max(0, Math.min(100, value)),
+      },
+    });
+  }, [id, nodes, updateNode]);
 
-  const handleWidthPercentChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = parseFloat(e.target.value) || 100;
-      updateNode(id, {
-        data: {
-          ...nodeData,
-          widthPercent: Math.max(0, Math.min(100, value)),
-        },
-      });
-    },
-    [id, nodeData, updateNode]
-  );
+  const updateWidthPercent = useCallback((value: number) => {
+    const node = nodes.find(n => n.id === id);
+    if (!node) return;
+    updateNode(id, {
+      data: {
+        ...node.data,
+        widthPercent: Math.max(0, Math.min(100, value)),
+      },
+    });
+  }, [id, nodes, updateNode]);
 
-  const handleHeightPercentChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = parseFloat(e.target.value) || 100;
-      updateNode(id, {
-        data: {
-          ...nodeData,
-          heightPercent: Math.max(0, Math.min(100, value)),
-        },
-      });
-    },
-    [id, nodeData, updateNode]
-  );
+  const updateHeightPercent = useCallback((value: number) => {
+    const node = nodes.find(n => n.id === id);
+    if (!node) return;
+    updateNode(id, {
+      data: {
+        ...node.data,
+        heightPercent: Math.max(0, Math.min(100, value)),
+      },
+    });
+  }, [id, nodes, updateNode]);
 
   const getStatusStyle = () => {
     if (status === "running") {
@@ -238,8 +246,15 @@ function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
             <label className="block text-xs mb-0.5" style={{ color: "var(--text-secondary)" }}>X Position</label>
             <input
               type="number"
-              value={nodeData.xPercent}
-              onChange={handleXPercentChange}
+              value={localX}
+              onChange={(e) => setLocalX(parseFloat(e.target.value) || 0)}
+              onBlur={() => updateXPercent(localX)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  updateXPercent(localX);
+                  e.currentTarget.blur();
+                }
+              }}
               min={0}
               max={100}
               step={0.1}
@@ -257,8 +272,15 @@ function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
             <label className="block text-xs mb-0.5" style={{ color: "var(--text-secondary)" }}>Y Position</label>
             <input
               type="number"
-              value={nodeData.yPercent}
-              onChange={handleYPercentChange}
+              value={localY}
+              onChange={(e) => setLocalY(parseFloat(e.target.value) || 0)}
+              onBlur={() => updateYPercent(localY)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  updateYPercent(localY);
+                  e.currentTarget.blur();
+                }
+              }}
               min={0}
               max={100}
               step={0.1}
@@ -276,8 +298,15 @@ function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
             <label className="block text-xs mb-0.5" style={{ color: "var(--text-secondary)" }}>Width</label>
             <input
               type="number"
-              value={nodeData.widthPercent}
-              onChange={handleWidthPercentChange}
+              value={localWidth}
+              onChange={(e) => setLocalWidth(parseFloat(e.target.value) || 100)}
+              onBlur={() => updateWidthPercent(localWidth)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  updateWidthPercent(localWidth);
+                  e.currentTarget.blur();
+                }
+              }}
               min={0}
               max={100}
               step={0.1}
@@ -295,8 +324,15 @@ function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
             <label className="block text-xs mb-0.5" style={{ color: "var(--text-secondary)" }}>Height</label>
             <input
               type="number"
-              value={nodeData.heightPercent}
-              onChange={handleHeightPercentChange}
+              value={localHeight}
+              onChange={(e) => setLocalHeight(parseFloat(e.target.value) || 100)}
+              onBlur={() => updateHeightPercent(localHeight)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  updateHeightPercent(localHeight);
+                  e.currentTarget.blur();
+                }
+              }}
               min={0}
               max={100}
               step={0.1}

@@ -33,11 +33,11 @@ export async function POST(request: NextRequest) {
     // Initialize Google Generative AI
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    // Only gemini-pro (gemini-1.0-pro) is supported in v1beta API
+    // Only gemini-2.5-flash (gemini-1.0-pro) is supported in v1beta API
     // Validate and fallback to supported model
-    const requestedModel = model || "gemini-pro";
-    const supportedModels = ["gemini-pro", "gemini-1.0-pro"];
-    const geminiModel = supportedModels.includes(requestedModel) ? requestedModel : "gemini-pro";
+    const requestedModel = model || "gemini-2.5-flash";
+    const supportedModels = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
+    const geminiModel = supportedModels.includes(requestedModel) ? requestedModel : "gemini-2.5-flash";
 
     const generativeModel = genAI.getGenerativeModel({ model: geminiModel });
 

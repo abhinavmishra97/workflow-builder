@@ -3,6 +3,7 @@
 import { memo, useCallback, useRef, useState } from "react";
 import { Handle, Position, useReactFlow, type NodeProps } from "reactflow";
 import { useWorkflowStore } from "@/store/workflowStore";
+import { useTransloaditUpload } from "@/hooks/useTransloaditUpload";
 import { Video, X } from "lucide-react";
 
 export type UploadVideoNodeData = {
@@ -21,6 +22,7 @@ function UploadVideoNode({ id, data, selected }: NodeProps<UploadVideoNodeData>)
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(data?.isUploading ?? false);
   const [error, setError] = useState<string | undefined>(data?.error);
+  const { upload } = useTransloaditUpload();
   
   const status = nodeStatus[id] || "idle";
 
@@ -59,47 +61,33 @@ function UploadVideoNode({ id, data, selected }: NodeProps<UploadVideoNodeData>)
       setIsUploading(true);
       setError(undefined);
 
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
+      await upload(file, {
+        templateId: process.env.NEXT_PUBLIC_TRANSLOADIT_TEMPLATE_VIDEO,
+        allowedFileTypes: ACCEPTED_FILE_TYPES,
+        onSuccess: (url) => {
+          updateNode(id, {
+            data: { ...nodeData, videoUrl: url, isUploading: false, error: undefined },
+          });
+          setNodeResult(id, { output: url, timestamp: Date.now() });
+          setIsUploading(false);
+        },
+        onError: (errorMessage) => {
+          setError(errorMessage);
+          setIsUploading(false);
+          updateNode(id, {
+            data: { ...nodeData, isUploading: false, error: errorMessage },
+          });
+        },
+        onProgress: (progress) => {
+          console.log(`Upload progress: ${progress}%`);
+        },
+      });
 
-        const response = await fetch("/api/upload-video", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: "Upload failed" }));
-          throw new Error(errorData.error || "Upload failed");
-        }
-
-        const result = await response.json();
-        const videoUrl = result.url;
-
-        if (!videoUrl) {
-          throw new Error("No URL returned from upload");
-        }
-
-        updateNode(id, {
-          data: { ...nodeData, videoUrl, isUploading: false, error: undefined },
-        });
-
-        setNodeResult(id, { output: videoUrl, timestamp: Date.now() });
-        setIsUploading(false);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "Upload failed";
-        setError(errorMessage);
-        setIsUploading(false);
-        updateNode(id, {
-          data: { ...nodeData, isUploading: false, error: errorMessage },
-        });
-      } finally {
-        if (fileInputRef.current) {
-          fileInputRef.current.value = "";
-        }
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
       }
     },
-    [id, nodeData, updateNode, setNodeResult]
+    [id, nodeData, updateNode, setNodeResult, upload]
   );
 
   const handleRemoveVideo = useCallback(() => {

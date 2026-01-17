@@ -5,7 +5,7 @@ import type {
   NodeResult,
   WorkflowState,
 } from "@/types/workflow";
-import { runWorkflow, resetWorkflowStatus } from "@/lib/workflowExecutor";
+import { runWorkflow } from "@/lib/workflowExecutor";
 
 interface WorkflowStore extends WorkflowState {
   // Actions
@@ -171,9 +171,6 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
     if (state.isExecuting) {
       return;
     }
-
-    // Reset all statuses to idle first
-    resetWorkflowStatus(state.nodes, state.setNodeStatus);
 
     set({ isExecuting: true });
 

@@ -163,30 +163,8 @@ export default function WorkflowCanvas() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // V key - Pointer mode
-      if (event.key === "v" || event.key === "V") {
-        if (!event.ctrlKey && !event.metaKey && !event.altKey) {
-          event.preventDefault();
-          setSelectionMode("pointer");
-        }
-      }
-
-      // H key - Hand mode
-      if (event.key === "h" || event.key === "H") {
-        if (!event.ctrlKey && !event.metaKey && !event.altKey) {
-          event.preventDefault();
-          setSelectionMode("hand");
-        }
-      }
-
-      // Space key - Temporarily switch to hand mode while held
-      if (event.key === " " && selectionMode === "pointer") {
-        event.preventDefault();
-        setSelectionMode("hand");
-      }
-
-      // Delete/Backspace - delete selected nodes
-      if (event.key === "Delete" || event.key === "Backspace") {
+      // Delete - delete selected nodes (only Delete key, not Backspace)
+      if (event.key === "Delete") {
         const selectedNodes = nodes.filter((node) => node.selected);
         if (selectedNodes.length > 0) {
           event.preventDefault();
@@ -222,18 +200,13 @@ export default function WorkflowCanvas() {
       }
     };
 
-    const handleKeyUp = (event: KeyboardEvent) => {
-      // Release space - return to pointer mode
-      if (event.key === " " && selectionMode === "hand") {
-        setSelectionMode("pointer");
-      }
-    };
+
+
+
 
     window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
     };
   }, [nodes, edges, setNodes, setEdges, undoRedoStore, selectionMode]);
 

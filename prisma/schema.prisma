@@ -46,19 +46,49 @@ model WorkflowFile {
 
 // WorkflowRun model - stores execution history
 model WorkflowRun {
-  id         String   @id @default(cuid())
-  workflowId String
-  status     String   // "running", "completed", "failed"
-  scope      String   // "full", "selected", "single"
-  duration   Int?     // Duration in milliseconds
-  results    Json?    // Execution results as JSON
-  error      String?  // Error message if failed
-  createdAt  DateTime @default(now())
+  id              String   @id @default(cuid())
+  workflowId      String
+  triggerRunId    String?  // Trigger.dev run ID
+  status          String   // "running", "completed", "failed", "partial"
+  scope           String   // "full", "selected", "single"
+  duration        Int?     // Duration in milliseconds
+  results         Json?    // Execution results as JSON
+  error           String?  // Error message if failed
+  totalNodes      Int      @default(0)
+  successfulNodes Int      @default(0)
+  failedNodes     Int      @default(0)
+  createdAt       DateTime @default(now())
+  completedAt     DateTime?
 
   // Relations
-  workflow WorkflowFile @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  workflow       WorkflowFile      @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  nodeExecutions NodeExecution[]
 
   @@index([workflowId])
   @@index([status])
+  @@index([triggerRunId])
   @@index([createdAt])
 }
+
+// NodeExecution model - stores individual node execution results
+model NodeExecution {
+  id            String   @id @default(cuid())
+  runId         String
+  nodeId        String   // React Flow node ID
+  nodeType      String   // "text", "llm", "cropImage", etc.
+  nodeName      String   // Display name
+  status        String   // "idle", "running", "success", "failed"
+  output        Json?    // Node output
+  error         String?  // Error message if failed
+  startedAt     DateTime @default(now())
+  completedAt   DateTime?
+  duration      Int?     // Duration in milliseconds
+
+  // Relations
+  run WorkflowRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId])
+  @@index([nodeId])
+  @@index([status])
+}
+

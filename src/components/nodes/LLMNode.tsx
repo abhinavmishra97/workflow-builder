@@ -5,18 +5,35 @@ import { Handle, Position, useReactFlow, type NodeProps } from "reactflow";
 import { useWorkflowStore } from "@/store/workflowStore";
 import { ChevronDown, ChevronUp, Play, Loader2 } from "lucide-react";
 
+// export type LLMNodeData = {
+//   model: string;
+//   systemPrompt: string;
+//   userMessage: string;
+//   label?: string;
+// };
 export type LLMNodeData = {
+  /** Gemini / LLM model */
   model: string;
-  systemPrompt: string;
-  userMessage: string;
+
+  /** Optional system instruction */
+  systemPrompt?: string;
+
+  /** User message (can come from Text node) */
+  userMessage?: string;
+
+  /** Image inputs connected to this node */
+  imageUrls?: string[];
+
+  /** Optional display label */
   label?: string;
 };
 
+
 const AVAILABLE_MODELS = [
-  { value: "gemini-1.5-pro", label: "Gemini 1.5 Pro" },
-  { value: "gemini-1.5-flash", label: "Gemini 1.5 Flash" },
-  { value: "gemini-pro", label: "Gemini Pro" },
+  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+  { value: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite" },
 ];
+
 
 function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
   const { nodeResults, nodeStatus, updateNode, setNodeStatus } = useWorkflowStore();
@@ -24,8 +41,12 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
   const [isOutputExpanded, setIsOutputExpanded] = useState(false);
 
   // Ensure data exists with defaults
+  const SAFE_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"] as const;
+
   const nodeData: LLMNodeData = {
-    model: data?.model ?? "gemini-pro",
+    model: SAFE_MODELS.includes(data?.model as any)
+      ? data.model
+      : "gemini-2.5-flash",
     systemPrompt: data?.systemPrompt ?? "",
     userMessage: data?.userMessage ?? "",
     label: data?.label ?? "LLM",

@@ -28,4 +28,8 @@ export default defineConfig({
     ],
     conditions: ["node"],
   },
+
+  // Use a machine preset that includes FFmpeg
+  // Note: FFmpeg is available in Trigger.dev's default environment
+  // If not, you may need to use a custom Docker image
 });

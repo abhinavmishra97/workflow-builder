@@ -69,7 +69,7 @@ export function createLLMNode(
     type: "llm",
     position,
     data: {
-      model: "gemini-pro",
+      model: "gemini-2.5-flash",
       systemPrompt: "",
       userMessage: "",
       label: "LLM",
