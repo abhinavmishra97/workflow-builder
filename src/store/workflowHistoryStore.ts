@@ -40,6 +40,7 @@ type WorkflowHistoryStore = {
     toggleCollapsed: () => void;
     clearHistory: () => void;
     setSidebarWidth: (width: number) => void;
+    setRuns: (runs: WorkflowRun[]) => void;
 };
 
 export const useWorkflowHistoryStore = create<WorkflowHistoryStore>((set) => ({
@@ -81,4 +82,6 @@ export const useWorkflowHistoryStore = create<WorkflowHistoryStore>((set) => ({
         set({
             sidebarWidth: Math.max(300, Math.min(600, width)), // Constrain between 300px and 600px
         }),
+
+    setRuns: (runs) => set({ runs }),
 }));

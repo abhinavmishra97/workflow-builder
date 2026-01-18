@@ -104,6 +104,25 @@ function ExtractFrameNode({ id, data, selected }: NodeProps<ExtractFrameNodeData
 
     useWorkflowStore.getState().setNodeStatus(id, "running");
 
+    // History tracking
+    const { useWorkflowHistoryStore } = await import("@/store/workflowHistoryStore");
+    const historyStore = useWorkflowHistoryStore.getState();
+    const runId = `Run #${Date.now()}`;
+    const startTime = Date.now();
+    
+    // Create initial history entry
+    historyStore.addRun({
+      runId,
+      scope: "single",
+      status: "running",
+      startedAt: startTime,
+      totalNodes: 1,
+      successfulNodes: 0,
+      failedNodes: 0,
+      nodeResults: [],
+      selectedNodeIds: [id]
+    });
+
     try {
       const response = await fetch("/api/trigger/extract-frame", {
         method: "POST",
@@ -127,13 +146,58 @@ function ExtractFrameNode({ id, data, selected }: NodeProps<ExtractFrameNodeData
 
       useWorkflowStore.getState().setNodeStatus(id, "success");
       setIsOutputExpanded(true);
+
+      // Update history on success
+      const endTime = Date.now();
+      const nodeResult = {
+        nodeId: id,
+        nodeType: "extractFrame",
+        nodeName: nodeData.label || "Extract Frame",
+        status: "success" as const,
+        startedAt: startTime,
+        completedAt: endTime,
+        duration: endTime - startTime,
+        output: result.extractedFrameUrl
+      };
+
+      historyStore.updateRun(runId, {
+        status: "success",
+        completedAt: endTime,
+        duration: endTime - startTime,
+        successfulNodes: 1,
+        nodeResults: [nodeResult]
+      });
+
     } catch (error) {
       console.error("[Extract Frame Node] Execution error:", error);
       useWorkflowStore.getState().setNodeStatus(id, "failed");
       
+      const errorMessage = error instanceof Error ? error.message : "Execution failed";
+
       useWorkflowStore.getState().setNodeResult(id, {
-        output: error instanceof Error ? error.message : "Execution failed",
+        output: errorMessage,
         timestamp: Date.now(),
+      });
+
+      // Update history on failure
+      const endTime = Date.now();
+      const nodeResult = {
+        nodeId: id,
+        nodeType: "extractFrame",
+        nodeName: nodeData.label || "Extract Frame",
+        status: "failed" as const,
+        startedAt: startTime,
+        completedAt: endTime,
+        duration: endTime - startTime,
+        error: errorMessage
+      };
+
+      historyStore.updateRun(runId, {
+        status: "failed",
+        completedAt: endTime,
+        duration: endTime - startTime,
+        failedNodes: 1,
+        nodeResults: [nodeResult]
       });
     }
   }, [id, aggregatedVideoUrl, nodeData]);

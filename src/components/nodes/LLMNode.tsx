@@ -203,11 +203,28 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
 
   const handleRun = useCallback(async () => {
     console.log("[LLM Node] Starting execution...");
-    console.log("[LLM Node] Aggregated inputs:", aggregatedInputs);
-    console.log("[LLM Node] Node data:", nodeData);
     
     // Set loading state
     setNodeStatus(id, "running");
+
+    // History tracking
+    const { useWorkflowHistoryStore } = await import("@/store/workflowHistoryStore");
+    const historyStore = useWorkflowHistoryStore.getState();
+    const runId = `Run #${Date.now()}`;
+    const startTime = Date.now();
+    
+    // Create initial history entry
+    historyStore.addRun({
+      runId,
+      scope: "single",
+      status: "running",
+      startedAt: startTime,
+      totalNodes: 1,
+      successfulNodes: 0,
+      failedNodes: 0,
+      nodeResults: [],
+      selectedNodeIds: [id]
+    });
     
     try {
       // Get the user message (from connected node or direct input)
@@ -224,8 +241,6 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
         imageUrls: aggregatedInputs.images.length > 0 ? aggregatedInputs.images : undefined,
       };
 
-      console.log("[LLM Node] Request body:", requestBody);
-
       // Call the LLM API
       const response = await fetch("/api/trigger/execute-llm", {
         method: "POST",
@@ -233,16 +248,12 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
         body: JSON.stringify(requestBody),
       });
 
-      console.log("[LLM Node] Response status:", response.status);
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("[LLM Node] Response error:", errorText);
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
       const result = await response.json();
-      console.log("[LLM Node] Response result:", result);
 
       if (!result.success) {
         throw new Error(result.error || "LLM execution failed");
@@ -255,16 +266,59 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
       });
 
       setNodeStatus(id, "success");
-      console.log("[LLM Node] Execution successful");
+      
+      // Update history on success
+      const endTime = Date.now();
+      const nodeResult = {
+        nodeId: id,
+        nodeType: "llm",
+        nodeName: nodeData.label || "LLM",
+        status: "success" as const,
+        startedAt: startTime,
+        completedAt: endTime,
+        duration: endTime - startTime,
+        output: result.output
+      };
+
+      historyStore.updateRun(runId, {
+        status: "success",
+        completedAt: endTime,
+        duration: endTime - startTime,
+        successfulNodes: 1,
+        nodeResults: [nodeResult]
+      });
+
     } catch (error) {
       console.error("[LLM Node] Execution error:", error);
       setNodeStatus(id, "failed");
       
-      // Show error in result
       const errorMessage = error instanceof Error ? error.message : "Execution failed";
+      
+      // Show error in result
       useWorkflowStore.getState().setNodeResult(id, {
         output: `Error: ${errorMessage}`,
         timestamp: Date.now(),
+      });
+
+      // Update history on failure
+      const endTime = Date.now();
+      const nodeResult = {
+        nodeId: id,
+        nodeType: "llm",
+        nodeName: nodeData.label || "LLM",
+        status: "failed" as const,
+        startedAt: startTime,
+        completedAt: endTime,
+        duration: endTime - startTime,
+        error: errorMessage
+      };
+
+      historyStore.updateRun(runId, {
+        status: "failed",
+        completedAt: endTime,
+        duration: endTime - startTime,
+        failedNodes: 1,
+        nodeResults: [nodeResult]
       });
     }
   }, [id, setNodeStatus, aggregatedInputs, nodeData]);

@@ -77,6 +77,40 @@ export default function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
               setEdges(content.edges);
             }
           }
+
+          // Load history
+          if (Array.isArray(data.runs)) {
+             const { useWorkflowHistoryStore } = await import("@/store/workflowHistoryStore");
+             const historyStore = useWorkflowHistoryStore.getState();
+             
+             const parsedRuns = data.runs.map((run: any) => ({
+                runId: run.id,
+                scope: run.triggerType === 'manual_node' ? 'single' : (run.triggerType === 'manual_selected' ? 'selected' : 'full'),
+                status: run.status === 'COMPLETED' ? 'success' : (run.status === 'FAILED' ? 'failed' : 'running'),
+                startedAt: new Date(run.startedAt).getTime(),
+                completedAt: run.completedAt ? new Date(run.completedAt).getTime() : undefined,
+                duration: run.duration,
+                // Handle different DB formats or missing fields
+                nodeResults: Array.isArray(run.nodeResults) ? run.nodeResults : [], 
+                totalNodes: 0, // Backend might not store this, calculate or default
+                successfulNodes: 0, 
+                failedNodes: 0,
+             }));
+             
+             // Recalculate counts if needed from nodeResults
+             parsedRuns.forEach((r: any) => {
+                 r.totalNodes = r.nodeResults.length;
+                 r.successfulNodes = r.nodeResults.filter((n: any) => n.status === 'success').length;
+                 r.failedNodes = r.nodeResults.filter((n: any) => n.status === 'failed').length;
+                 
+                 // Fix status mapping if 'partial' is not in DB but we want it
+                 if (r.failedNodes > 0 && r.successfulNodes > 0 && r.status === 'success') {
+                     r.status = 'partial';
+                 }
+             });
+
+             historyStore.setRuns(parsedRuns);
+          }
         }
       } catch (error) {
         console.error("Failed to load workflow:", error);
