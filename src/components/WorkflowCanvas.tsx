@@ -63,6 +63,9 @@ export default function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
   useEffect(() => {
     if (!workflowId) return;
 
+    // Set workflow ID in store
+    useWorkflowStore.getState().setWorkflowId(workflowId);
+
     const loadWorkflow = async () => {
       try {
         const res = await fetch(`/api/workflows/${workflowId}`);

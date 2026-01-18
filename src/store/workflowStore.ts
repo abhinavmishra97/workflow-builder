@@ -24,6 +24,8 @@ interface WorkflowStore extends WorkflowState {
   // Execution actions
   executeWorkflow: () => Promise<void>;
   isExecuting: boolean;
+  workflowId: string | null;
+  setWorkflowId: (id: string) => void;
 }
 
 const initialState: WorkflowState = {
@@ -37,6 +39,8 @@ const initialState: WorkflowState = {
 export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
   ...initialState,
   isExecuting: false,
+  workflowId: null,
+  setWorkflowId: (id) => set({ workflowId: id }),
 
   addNode: (node) => {
     set((state) => ({
@@ -206,6 +210,9 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
     });
 
     try {
+      // Clear previous results before starting
+      set({ nodeResults: {} });
+
       await runWorkflow(state.nodes, state.edges, {
         setNodeStatus: (nodeId, status) => {
           get().setNodeStatus(nodeId, status);
@@ -244,6 +251,12 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
           }
         },
         onNodeError: (nodeId: string, error: Error) => {
+          // Update store with error so it shows on the node
+          get().setNodeResult(nodeId, {
+            output: error.message,
+            timestamp: Date.now(),
+          });
+
           let nodeResult = nodeExecutionResults.find(r => r.nodeId === nodeId);
 
           if (!nodeResult) {

@@ -36,7 +36,7 @@ const AVAILABLE_MODELS = [
 
 
 function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
-  const { nodeResults, nodeStatus, updateNode, setNodeStatus } = useWorkflowStore();
+  const { nodeResults, nodeStatus, updateNode, setNodeStatus, workflowId } = useWorkflowStore();
   const { getEdges, getNodes } = useReactFlow();
   const [isOutputExpanded, setIsOutputExpanded] = useState(false);
 
@@ -288,6 +288,11 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
         nodeResults: [nodeResult]
       });
 
+      if (workflowId) {
+          const { persistSingleNodeRun } = await import("@/lib/workflowPersistence");
+          persistSingleNodeRun(workflowId, { id, type: 'llm', data: nodeData } as any, result.output, "success");
+      }
+
     } catch (error) {
       console.error("[LLM Node] Execution error:", error);
       setNodeStatus(id, "failed");
@@ -320,6 +325,11 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
         failedNodes: 1,
         nodeResults: [nodeResult]
       });
+
+      if (workflowId) {
+          const { persistSingleNodeRun } = await import("@/lib/workflowPersistence");
+          persistSingleNodeRun(workflowId, { id, type: 'llm', data: nodeData } as any, null, "failed", errorMessage);
+      }
     }
   }, [id, setNodeStatus, aggregatedInputs, nodeData]);
 

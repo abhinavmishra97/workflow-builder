@@ -25,14 +25,14 @@ export async function runWorkflow(
   const { setNodeStatus, setNodeResult, onNodeError, onWorkflowComplete, onWorkflowError } =
     callbacks;
 
+  let workflowRunId: string | undefined;
+
   try {
     // Reset all nodes
     nodes.forEach((n) => setNodeStatus?.(n.id, "idle"));
 
     // Validate DAG
     const executionOrder = getExecutionOrder(nodes, edges);
-
-    let workflowRunId: string | undefined;
 
     if (workflowId) {
       const res = await fetch("/api/workflow/create-run", {
@@ -103,8 +103,30 @@ export async function runWorkflow(
     }
 
     onWorkflowComplete?.();
+
+    if (workflowRunId) {
+      await fetch("/api/workflow/complete-run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          runId: workflowRunId,
+          status: "success", // or check for partial failures if possible
+        }),
+      });
+    }
   } catch (err) {
     onWorkflowError?.(err as Error);
+
+    if (workflowRunId) {
+      await fetch("/api/workflow/complete-run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          runId: workflowRunId,
+          status: "failed",
+        }),
+      });
+    }
   }
 }
 
