@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ["ffmpeg-static", "ffprobe-static", "fluent-ffmpeg"],
+  serverExternalPackages: ["ffmpeg-static", "ffprobe-static"],
   typescript: {
     // !! WARN !!
     // Dangerously allow production builds to successfully complete even if
