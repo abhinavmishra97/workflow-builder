@@ -58,6 +58,8 @@ export default function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
     useWorkflowStore();
   
   const [isLoaded, setIsLoaded] = useState(false);
+  const [workflowName, setWorkflowName] = useState("Untitled Workflow");
+  const [isEditingName, setIsEditingName] = useState(false);
 
   // Load workflow data
   useEffect(() => {
@@ -71,6 +73,8 @@ export default function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
         const res = await fetch(`/api/workflows/${workflowId}`);
         if (res.ok) {
           const data = await res.json();
+          if (data.name) setWorkflowName(data.name);
+          
           if (data.content && typeof data.content === 'object') {
             const content = data.content as { nodes?: any[], edges?: any[] };
             if (Array.isArray(content.nodes)) {
@@ -181,6 +185,20 @@ export default function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
       console.error("Workflow execution error:", error);
     }
   }, [executeWorkflow]);
+
+  const handleRename = useCallback(async () => {
+    setIsEditingName(false);
+    if (!workflowId) return;
+    try {
+      await fetch(`/api/workflows/${workflowId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: workflowName }),
+      });
+    } catch (error) {
+      console.error("Failed to rename workflow:", error);
+    }
+  }, [workflowId, workflowName]);
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
@@ -443,9 +461,29 @@ export default function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
       >
         {/* Workflow Name */}
         <div className="flex items-center gap-4">
-          <h1 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
-            Untitled Workflow
-          </h1>
+          {isEditingName ? (
+            <input
+              type="text"
+              value={workflowName}
+              onChange={(e) => setWorkflowName(e.target.value)}
+              onBlur={handleRename}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleRename();
+              }}
+              className="px-2 py-1 text-base font-semibold border rounded bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={{ color: "var(--text-primary)", borderColor: "var(--border)" }}
+              autoFocus
+            />
+          ) : (
+            <h1 
+              className="text-base font-semibold cursor-pointer px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" 
+              onClick={() => setIsEditingName(true)}
+              style={{ color: "var(--text-primary)" }}
+              title="Click to rename"
+            >
+              {workflowName}
+            </h1>
+          )}
         </div>
 
         {/* Action Buttons */}
