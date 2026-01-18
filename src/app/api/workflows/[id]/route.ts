@@ -11,7 +11,7 @@ export async function GET(
         const { userId } = await auth()
         const { id } = await context.params
 
-        if (!userId) {  
+        if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
@@ -52,7 +52,7 @@ export async function GET(
 
 // PUT /api/workflows/[id] - Update a workflow
 export async function PUT(
-    request: Request,
+    request: NextRequest,
     context: { params: Promise<{ id: string }> }
 ) {
     try {
@@ -62,7 +62,7 @@ export async function PUT(
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
-
+        // ... (rest of PUT body same as before, truncated for brevity, but I will replace the signature only and keep body intact)
         const user = await prisma.user.findUnique({
             where: { clerkId: userId },
         })
@@ -106,7 +106,7 @@ export async function PUT(
 
 // DELETE /api/workflows/[id] - Delete a workflow
 export async function DELETE(
-    request: Request,
+    request: NextRequest,
     context: { params: Promise<{ id: string }> }
 ) {
     try {
