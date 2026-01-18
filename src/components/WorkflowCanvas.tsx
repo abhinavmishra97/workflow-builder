@@ -49,9 +49,66 @@ const nodeTypes = {
   extractFrame: ExtractFrameNode,
 };
 
-export default function WorkflowCanvas() {
+interface WorkflowCanvasProps {
+  workflowId?: string;
+}
+
+export default function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
   const { nodes, edges, setNodes, setEdges, connectNodes, executeWorkflow, isExecuting, addNode, setNodeStatus, setNodeResult } =
     useWorkflowStore();
+  
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load workflow data
+  useEffect(() => {
+    if (!workflowId) return;
+
+    const loadWorkflow = async () => {
+      try {
+        const res = await fetch(`/api/workflows/${workflowId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.content && typeof data.content === 'object') {
+            const content = data.content as { nodes?: any[], edges?: any[] };
+            if (Array.isArray(content.nodes)) {
+              setNodes(content.nodes);
+            }
+            if (Array.isArray(content.edges)) {
+              setEdges(content.edges);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load workflow:", error);
+      } finally {
+        setIsLoaded(true);
+      }
+    };
+
+    loadWorkflow();
+  }, [workflowId, setNodes, setEdges]);
+
+  // Auto-save workflow data
+  useEffect(() => {
+    if (!workflowId || !isLoaded) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        await fetch(`/api/workflows/${workflowId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: { nodes, edges }
+          })
+        });
+        console.log("Workflow saved");
+      } catch (error) {
+        console.error("Failed to save workflow:", error);
+      }
+    }, 2000); // 2 second debounce
+
+    return () => clearTimeout(timer);
+  }, [nodes, edges, workflowId, isLoaded]);
 
   const onInit = useCallback((reactFlowInstance: ReactFlowInstance) => {
     reactFlowInstance.fitView(fitViewOptions);

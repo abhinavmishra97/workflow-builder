@@ -19,5 +19,5 @@ export default async function WorkflowPage(props: WorkflowPageProps) {
 
   // pass the ID to the canvas if needed, or just let it load
   // For now, just render the canvas
-  return <WorkflowCanvas />;
+  return <WorkflowCanvas workflowId={id} />;
 }
