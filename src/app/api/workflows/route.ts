@@ -59,10 +59,16 @@ export async function POST(request: Request) {
         if (!userId) {
             const hasSecretKey = !!process.env.CLERK_SECRET_KEY;
             const hasPublishableKey = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+            // Check for session cookie
+            const { cookies } = await import('next/headers');
+            const cookieStore = await cookies();
+            const hasSessionCookie = cookieStore.has('__session');
+
             console.log('Auth failed in POST /api/workflows. userId is null.');
             console.log('Environment Debug: CLERK_SECRET_KEY present:', hasSecretKey);
             return NextResponse.json({
-                error: `Unauthorized: User ID not found. Debug: SecretKey=${hasSecretKey}, PubKey=${hasPublishableKey}`
+                error: `Unauthorized: User ID not found. Debug: SecretKey=${hasSecretKey}, PubKey=${hasPublishableKey}, HasSessionCookie=${hasSessionCookie}`
             }, { status: 401 })
         }
 
