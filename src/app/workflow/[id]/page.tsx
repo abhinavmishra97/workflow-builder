@@ -8,9 +8,10 @@ interface WorkflowPageProps {
   }>;
 }
 
-export default async function WorkflowPage({ params }: WorkflowPageProps) {
+export default async function WorkflowPage(props: WorkflowPageProps) {
   const { userId } = await auth();
-  const { id } = await params;
+  const params = await props.params;
+  const { id } = params;
 
   if (!userId) {
     redirect("/sign-in");

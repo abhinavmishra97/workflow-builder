@@ -5,11 +5,11 @@ import { NextResponse } from 'next/server'
 // GET /api/workflows/[id] - Get a specific workflow
 export async function GET(
     request: Request,
-    { params }: { params: Promise<{ id: string }> }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
         const { userId } = await auth()
-        const { id } = await params
+        const { id } = await context.params
 
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -53,11 +53,11 @@ export async function GET(
 // PUT /api/workflows/[id] - Update a workflow
 export async function PUT(
     request: Request,
-    { params }: { params: Promise<{ id: string }> }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
         const { userId } = await auth()
-        const { id } = await params
+        const { id } = await context.params
 
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -107,11 +107,11 @@ export async function PUT(
 // DELETE /api/workflows/[id] - Delete a workflow
 export async function DELETE(
     request: Request,
-    { params }: { params: Promise<{ id: string }> }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
         const { userId } = await auth()
-        const { id } = await params
+        const { id } = await context.params
 
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
