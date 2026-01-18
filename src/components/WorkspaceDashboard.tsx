@@ -122,6 +122,16 @@ export default function WorkspaceDashboard({ userName = "Abhinav Mishra" }: Work
       if (response.ok) {
         const newWorkflow = await response.json();
         router.push(`/workflow/${newWorkflow.id}`);
+      } else {
+        console.error('Failed to create workflow:', response.status, response.statusText);
+        let errorMsg = 'Unknown error';
+        try {
+            const errorData = await response.json();
+            errorMsg = errorData.error || errorMsg;
+        } catch (e) {
+            // response was not json
+        }
+        alert(`Failed to create workflow: ${errorMsg}`);
       }
     } catch (error) {
       console.error('Error creating workflow:', error);
