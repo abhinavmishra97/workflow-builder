@@ -244,10 +244,28 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
           }
         },
         onNodeError: (nodeId: string, error: Error) => {
-          const nodeResult = nodeExecutionResults.find(r => r.nodeId === nodeId);
+          let nodeResult = nodeExecutionResults.find(r => r.nodeId === nodeId);
+
+          if (!nodeResult) {
+            // If node failed immediately (e.g. validaton error), it might not have an entry yet
+            const node = state.nodes.find(n => n.id === nodeId);
+            if (node) {
+              nodeResult = {
+                nodeId,
+                nodeType: node.type || "unknown",
+                nodeName: (node.data as any)?.label || node.type || "Node",
+                status: "failed",
+                startedAt: Date.now(),
+              };
+              nodeExecutionResults.push(nodeResult);
+            }
+          }
+
           if (nodeResult) {
             nodeResult.error = error.message;
             nodeResult.status = "failed";
+            nodeResult.completedAt = Date.now();
+            nodeResult.duration = (nodeResult.completedAt || 0) - nodeResult.startedAt;
           }
         },
         onWorkflowComplete: () => {
