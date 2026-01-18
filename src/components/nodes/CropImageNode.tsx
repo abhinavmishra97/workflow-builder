@@ -3,7 +3,7 @@
 import { memo, useCallback, useMemo, useState, useEffect } from "react";
 import { Handle, Position, useReactFlow, type NodeProps } from "reactflow";
 import { useWorkflowStore } from "@/store/workflowStore";
-import { Crop } from "lucide-react";
+import { Crop, ChevronDown, ChevronUp, Loader2, Play } from "lucide-react";
 
 export type CropImageNodeData = {
   imageUrl: string | null;
@@ -17,8 +17,11 @@ export type CropImageNodeData = {
 function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
   const { nodes, nodeResults, updateNode, nodeStatus } = useWorkflowStore();
   const { getEdges, getNodes } = useReactFlow();
+  const [isOutputExpanded, setIsOutputExpanded] = useState(false);
   
   const status = nodeStatus[id] || "idle";
+  const result = nodeResults[id];
+  const outputUrl = typeof result?.output === "string" ? result.output : "";
 
   // Ensure data exists with defaults
   const nodeData: CropImageNodeData = {
@@ -142,6 +145,55 @@ function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
       },
     });
   }, [id, nodes, updateNode]);
+
+  const handleRun = useCallback(async () => {
+    const imageUrl = aggregatedImageUrl || nodeData.imageUrl;
+    
+    if (!imageUrl) {
+      console.error("No image URL provided");
+      return;
+    }
+
+    // Set loading state
+    useWorkflowStore.getState().setNodeStatus(id, "running");
+
+    try {
+      const response = await fetch("/api/trigger/crop-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageUrl,
+          xPercent: nodeData.xPercent,
+          yPercent: nodeData.yPercent,
+          widthPercent: nodeData.widthPercent,
+          heightPercent: nodeData.heightPercent,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Crop failed");
+      }
+
+      // Update node result
+      useWorkflowStore.getState().setNodeResult(id, {
+        output: result.croppedImageUrl,
+        timestamp: Date.now(),
+      });
+
+      useWorkflowStore.getState().setNodeStatus(id, "success");
+      setIsOutputExpanded(true);
+    } catch (error) {
+      console.error("[Crop Node] Execution error:", error);
+      useWorkflowStore.getState().setNodeStatus(id, "failed");
+      
+      useWorkflowStore.getState().setNodeResult(id, {
+        output: error instanceof Error ? error.message : "Execution failed",
+        timestamp: Date.now(),
+      });
+    }
+  }, [id, aggregatedImageUrl, nodeData]);
 
   const getStatusStyle = () => {
     if (status === "running") {
@@ -358,6 +410,69 @@ function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
           >
             <div>Crop: {nodeData.xPercent}%, {nodeData.yPercent}%</div>
             <div>Size: {nodeData.widthPercent}% × {nodeData.heightPercent}%</div>
+          </div>
+        )}
+
+        {/* Run Button */}
+        <button
+          onClick={handleRun}
+          disabled={status === "running" || (!aggregatedImageUrl && !nodeData.imageUrl)}
+          className={`w-full px-3 py-2 text-sm font-medium rounded flex items-center justify-center gap-2 transition-colors ${
+            status === "running" || (!aggregatedImageUrl && !nodeData.imageUrl)
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-blue-500 text-white hover:bg-blue-600"
+          }`}
+        >
+          {status === "running" ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Processing...</span>
+            </>
+          ) : (
+            <>
+              <Play className="w-4 h-4" />
+              <span>Run Crop</span>
+            </>
+          )}
+        </button>
+
+        {/* Result Display - Shows cropped image URL after workflow execution */}
+        {outputUrl && (
+          <div 
+            className="mt-3 border rounded-lg overflow-hidden"
+            style={{
+              borderColor: status === "failed" ? "var(--danger)" : "var(--success)",
+              backgroundColor: "var(--bg)",
+            }}
+          >
+            <button
+              onClick={() => setIsOutputExpanded(!isOutputExpanded)}
+              className="w-full px-3 py-2 text-xs font-semibold flex items-center justify-between transition-colors"
+              style={{
+                backgroundColor: status === "failed" ? "var(--danger)" : "var(--success)",
+                color: "white",
+              }}
+            >
+              <span>{status === "failed" ? "✗ Error" : "✓ Result"}</span>
+              {isOutputExpanded ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </button>
+            {isOutputExpanded && (
+              <div 
+                className="px-3 py-2 text-xs max-h-48 overflow-y-auto"
+                style={{
+                  color: "var(--text-primary)",
+                  backgroundColor: "var(--card)",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                }}
+              >
+                {outputUrl}
+              </div>
+            )}
           </div>
         )}
       </div>

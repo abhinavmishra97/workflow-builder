@@ -173,9 +173,11 @@ async function executeNode(
     return result.output;
   }
 
+
   /* =======================
-     CROP IMAGE
-     ======================= */
+        CROP IMAGE NODE
+    ======================= */
+
   if (node.type === "cropImage") {
     const data = node.data as {
       imageUrl?: string | null;
@@ -185,7 +187,7 @@ async function executeNode(
       heightPercent?: number;
     };
 
-    // 🔑 Resolve imageUrl from connected node
+    // Resolve imageUrl from connected UploadImage node
     let imageUrl = data.imageUrl;
 
     const imageEdge = allEdges.find(
@@ -193,14 +195,14 @@ async function executeNode(
     );
 
     if (imageEdge) {
-      const sourceResult = nodeResults[imageEdge.source];
-      if (typeof sourceResult === "string") {
-        imageUrl = sourceResult;
+      const upstream = nodeResults[imageEdge.source];
+      if (typeof upstream === "string") {
+        imageUrl = upstream;
       }
     }
 
     if (!imageUrl) {
-      throw new Error("imageUrl is required");
+      throw new Error("CropImage node requires an image input");
     }
 
     const res = await fetch("/api/trigger/crop-image", {
@@ -221,8 +223,11 @@ async function executeNode(
       throw new Error(result.error || "Crop failed");
     }
 
-    return result.croppedImageUrl;
+    // 🔑 RETURN STRING URL — this feeds result box + next nodes
+    return result.output;
   }
+
+
 
 
   /* =======================

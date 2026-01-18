@@ -119,7 +119,7 @@ export const executeWorkflow = task({
                             throw new Error(cropResult.output.error || "Crop failed");
                         }
 
-                        result = cropResult.output.croppedImageUrl;
+                        result = cropResult.output.output; // Access the nested output property
                         break;
 
                     case "llm":
