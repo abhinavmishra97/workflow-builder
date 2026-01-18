@@ -142,12 +142,27 @@ async function executeNode(
       }
     }
 
-    // 2️⃣ Fallback to LLM node textarea
+    // 2️⃣ Collect images from connected nodes (UploadImage, CropImage)
+    const imageUrls: string[] = [];
+
+    for (const edge of incomingEdges) {
+      const sourceNode = allNodes.find((n) => n.id === edge.source);
+      if (!sourceNode) continue;
+
+      if (sourceNode.type === "uploadImage" || sourceNode.type === "cropImage") {
+        const result = nodeResults[edge.source];
+        if (typeof result === "string" && result.startsWith("http")) {
+          imageUrls.push(result);
+        }
+      }
+    }
+
+    // 3️⃣ Fallback to LLM node textarea
     if (!userMessage && data.userMessage?.trim()) {
       userMessage = data.userMessage.trim();
     }
 
-    // 3️⃣ HARD VALIDATION
+    // 4️⃣ HARD VALIDATION
     if (!userMessage) {
       throw new Error(
         "LLM node requires a user message. Connect a Text node or enter text directly."
@@ -160,6 +175,7 @@ async function executeNode(
       body: JSON.stringify({
         systemPrompt: data.systemPrompt || undefined,
         userMessage,
+        imageUrls,
         model: data.model || "gemini-2.5-flash",
       }),
     });
@@ -224,7 +240,7 @@ async function executeNode(
     }
 
     // 🔑 RETURN STRING URL — this feeds result box + next nodes
-    return result.output;
+    return result.croppedImageUrl;
   }
 
 

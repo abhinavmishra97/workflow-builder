@@ -227,7 +227,7 @@ function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
 
   return (
     <div
-      className="rounded-xl overflow-hidden min-w-[260px]"
+      className="rounded-xl overflow-hidden w-80 shadow-sm"
       style={{
         backgroundColor: "var(--card)",
         border: "1px solid",
@@ -293,120 +293,102 @@ function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
         <div className="mb-3 space-y-2">
           <label className="block text-xs mb-1" style={{ color: "var(--text-secondary)" }}>Crop Parameters (%)</label>
           
-          {/* X Percent */}
-          <div>
-            <label className="block text-xs mb-0.5" style={{ color: "var(--text-secondary)" }}>X Position</label>
-            <input
-              type="number"
-              value={localX}
-              onChange={(e) => setLocalX(parseFloat(e.target.value) || 0)}
-              onBlur={() => updateXPercent(localX)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  updateXPercent(localX);
-                  e.currentTarget.blur();
-                }
-              }}
-              min={0}
-              max={100}
-              step={0.1}
-              className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none transition-all"
-              style={{
-                backgroundColor: "var(--bg)",
-                color: "var(--text-primary)",
-                border: "1px solid var(--border)",
-              }}
-            />
-          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {/* X Percent */}
+            <div>
+              <label className="block text-[10px] mb-0.5 opacity-70">X Pos</label>
+              <input
+                type="number"
+                value={localX}
+                onChange={(e) => setLocalX(parseFloat(e.target.value) || 0)}
+                onBlur={() => updateXPercent(localX)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    updateXPercent(localX);
+                    e.currentTarget.blur();
+                  }
+                }}
+                min={0}
+                max={100}
+                step={0.1}
+                className="w-full px-2 py-1.5 text-xs rounded border bg-transparent"
+                style={{ borderColor: "var(--border)" }}
+              />
+            </div>
 
-          {/* Y Percent */}
-          <div>
-            <label className="block text-xs mb-0.5" style={{ color: "var(--text-secondary)" }}>Y Position</label>
-            <input
-              type="number"
-              value={localY}
-              onChange={(e) => setLocalY(parseFloat(e.target.value) || 0)}
-              onBlur={() => updateYPercent(localY)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  updateYPercent(localY);
-                  e.currentTarget.blur();
-                }
-              }}
-              min={0}
-              max={100}
-              step={0.1}
-              className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none transition-all"
-              style={{
-                backgroundColor: "var(--bg)",
-                color: "var(--text-primary)",
-                border: "1px solid var(--border)",
-              }}
-            />
-          </div>
+            {/* Y Percent */}
+            <div>
+              <label className="block text-[10px] mb-0.5 opacity-70">Y Pos</label>
+              <input
+                type="number"
+                value={localY}
+                onChange={(e) => setLocalY(parseFloat(e.target.value) || 0)}
+                onBlur={() => updateYPercent(localY)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    updateYPercent(localY);
+                    e.currentTarget.blur();
+                  }
+                }}
+                min={0}
+                max={100}
+                step={0.1}
+                className="w-full px-2 py-1.5 text-xs rounded border bg-transparent"
+                style={{ borderColor: "var(--border)" }}
+              />
+            </div>
 
-          {/* Width Percent */}
-          <div>
-            <label className="block text-xs mb-0.5" style={{ color: "var(--text-secondary)" }}>Width</label>
-            <input
-              type="number"
-              value={localWidth}
-              onChange={(e) => setLocalWidth(parseFloat(e.target.value) || 100)}
-              onBlur={() => updateWidthPercent(localWidth)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  updateWidthPercent(localWidth);
-                  e.currentTarget.blur();
-                }
-              }}
-              min={0}
-              max={100}
-              step={0.1}
-              className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none transition-all"
-              style={{
-                backgroundColor: "var(--bg)",
-                color: "var(--text-primary)",
-                border: "1px solid var(--border)",
-              }}
-            />
-          </div>
+            {/* Width Percent */}
+            <div>
+              <label className="block text-[10px] mb-0.5 opacity-70">Width</label>
+              <input
+                type="number"
+                value={localWidth}
+                onChange={(e) => setLocalWidth(parseFloat(e.target.value) || 100)}
+                onBlur={() => updateWidthPercent(localWidth)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    updateWidthPercent(localWidth);
+                    e.currentTarget.blur();
+                  }
+                }}
+                min={0}
+                max={100}
+                step={0.1}
+                className="w-full px-2 py-1.5 text-xs rounded border bg-transparent"
+                style={{ borderColor: "var(--border)" }}
+              />
+            </div>
 
-          {/* Height Percent */}
-          <div>
-            <label className="block text-xs mb-0.5" style={{ color: "var(--text-secondary)" }}>Height</label>
-            <input
-              type="number"
-              value={localHeight}
-              onChange={(e) => setLocalHeight(parseFloat(e.target.value) || 100)}
-              onBlur={() => updateHeightPercent(localHeight)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  updateHeightPercent(localHeight);
-                  e.currentTarget.blur();
-                }
-              }}
-              min={0}
-              max={100}
-              step={0.1}
-              className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none transition-all"
-              style={{
-                backgroundColor: "var(--bg)",
-                color: "var(--text-primary)",
-                border: "1px solid var(--border)",
-              }}
-            />
+            {/* Height Percent */}
+            <div>
+              <label className="block text-[10px] mb-0.5 opacity-70">Height</label>
+              <input
+                type="number"
+                value={localHeight}
+                onChange={(e) => setLocalHeight(parseFloat(e.target.value) || 100)}
+                onBlur={() => updateHeightPercent(localHeight)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    updateHeightPercent(localHeight);
+                    e.currentTarget.blur();
+                  }
+                }}
+                min={0}
+                max={100}
+                step={0.1}
+                className="w-full px-2 py-1.5 text-xs rounded border bg-transparent"
+                style={{ borderColor: "var(--border)" }}
+              />
+            </div>
           </div>
         </div>
 
         {/* Preview Info */}
         {aggregatedImageUrl && (
           <div
-            className="mt-2 p-3 rounded-lg text-xs"
-            style={{
-              backgroundColor: "var(--hover)",
-              color: "var(--text-secondary)",
-              border: "1px solid var(--border)",
-            }}
+            className="mt-2 p-2 rounded text-[10px] bg-opacity-50"
+            style={{ backgroundColor: "var(--hover)" }}
           >
             <div>Crop: {nodeData.xPercent}%, {nodeData.yPercent}%</div>
             <div>Size: {nodeData.widthPercent}% × {nodeData.heightPercent}%</div>
@@ -417,29 +399,29 @@ function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
         <button
           onClick={handleRun}
           disabled={status === "running" || (!aggregatedImageUrl && !nodeData.imageUrl)}
-          className={`w-full px-3 py-2 text-sm font-medium rounded flex items-center justify-center gap-2 transition-colors ${
+          className={`w-full mt-3 px-3 py-2 text-xs font-medium rounded flex items-center justify-center gap-2 transition-colors ${
             status === "running" || (!aggregatedImageUrl && !nodeData.imageUrl)
-              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-              : "bg-blue-500 text-white hover:bg-blue-600"
+              ? "opacity-50 cursor-not-allowed bg-gray-200 text-gray-500"
+              : "bg-blue-600 text-white hover:bg-blue-700"
           }`}
         >
           {status === "running" ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-3 h-3 animate-spin" />
               <span>Processing...</span>
             </>
           ) : (
             <>
-              <Play className="w-4 h-4" />
+              <Play className="w-3 h-3" />
               <span>Run Crop</span>
             </>
           )}
         </button>
 
-        {/* Result Display - Shows cropped image URL after workflow execution */}
+        {/* Result Display */}
         {outputUrl && (
           <div 
-            className="mt-3 border rounded-lg overflow-hidden"
+            className="mt-3 border rounded overflow-hidden"
             style={{
               borderColor: status === "failed" ? "var(--danger)" : "var(--success)",
               backgroundColor: "var(--bg)",
@@ -455,22 +437,32 @@ function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
             >
               <span>{status === "failed" ? "✗ Error" : "✓ Result"}</span>
               {isOutputExpanded ? (
-                <ChevronUp className="w-4 h-4" />
+                <ChevronUp className="w-3 h-3" />
               ) : (
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDown className="w-3 h-3" />
               )}
             </button>
             {isOutputExpanded && (
-              <div 
-                className="px-3 py-2 text-xs max-h-48 overflow-y-auto"
-                style={{
-                  color: "var(--text-primary)",
-                  backgroundColor: "var(--card)",
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                }}
-              >
-                {outputUrl}
+              <div className="p-0 bg-black/5">
+                 {status === "failed" ? (
+                   <div className="p-3 text-xs text-red-500 break-words">{outputUrl}</div>
+                 ) : (
+                   <div className="relative w-full aspect-video">
+                      <img 
+                        src={outputUrl} 
+                        alt="Cropped result" 
+                        className="w-full h-full object-contain"
+                      />
+                      <a 
+                        href={outputUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="absolute bottom-1 right-1 text-[10px] bg-black/70 text-white px-2 py-0.5 rounded hover:bg-black"
+                      >
+                        Open
+                      </a>
+                   </div>
+                 )}
               </div>
             )}
           </div>
