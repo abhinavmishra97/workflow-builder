@@ -65,7 +65,7 @@ export async function POST(req: Request) {
         }
 
         /* ---------- EXTRACT FRAME ---------- */
-        // ffmpeg -ss <time> -i <input> -frames:v 1 -q:v 2 <output>
+        // Reverting to input seeking (-ss before -i) as it was working previously
         await execFileAsync(ffmpegPath, [
             "-ss", seekTime,
             "-i", inputPath,
@@ -74,6 +74,13 @@ export async function POST(req: Request) {
             "-y",
             outputPath,
         ]);
+
+        // Verify output exists
+        try {
+            await fs.access(outputPath);
+        } catch {
+            throw new Error("FFmpeg failed to generate the output file");
+        }
 
         /* ---------- UPLOAD TO TRANSLOADIT ---------- */
         const formData = new FormData();

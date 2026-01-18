@@ -149,7 +149,7 @@ async function executeNode(
       const sourceNode = allNodes.find((n) => n.id === edge.source);
       if (!sourceNode) continue;
 
-      if (sourceNode.type === "uploadImage" || sourceNode.type === "cropImage") {
+      if (sourceNode.type === "uploadImage" || sourceNode.type === "cropImage" || sourceNode.type === "extractFrame") {
         const result = nodeResults[edge.source];
         if (typeof result === "string" && result.startsWith("http")) {
           imageUrls.push(result);

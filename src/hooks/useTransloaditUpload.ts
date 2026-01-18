@@ -70,8 +70,8 @@ export function useTransloaditUpload() {
                     assemblyOptions: {
                         params: assemblyParams,
                     },
-                    waitForEncoding: true,
-                    waitForMetadata: true,
+                    waitForEncoding: false, // Don't wait for full encoding, just upload
+                    waitForMetadata: false,
                 });
 
                 uppy.on(

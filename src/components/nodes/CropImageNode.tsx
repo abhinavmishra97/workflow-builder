@@ -447,21 +447,34 @@ function CropImageNode({ id, data, selected }: NodeProps<CropImageNodeData>) {
                  {status === "failed" ? (
                    <div className="p-3 text-xs text-red-500 break-words">{outputUrl}</div>
                  ) : (
-                   <div className="relative w-full aspect-video">
-                      <img 
-                        src={outputUrl} 
-                        alt="Cropped result" 
-                        className="w-full h-full object-contain"
-                      />
-                      <a 
-                        href={outputUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="absolute bottom-1 right-1 text-[10px] bg-black/70 text-white px-2 py-0.5 rounded hover:bg-black"
-                      >
-                        Open
-                      </a>
-                   </div>
+                   <>
+                     <div className="relative w-full aspect-video group">
+                        <img 
+                          src={outputUrl} 
+                          alt="Cropped result" 
+                          className="w-full h-full object-contain"
+                        />
+                        <a 
+                          href={outputUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="absolute bottom-1 right-1 text-[10px] bg-black/70 text-white px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black"
+                        >
+                          Open Original
+                        </a>
+                     </div>
+                     <div className="p-2 border-t" style={{ borderColor: "var(--border)" }}>
+                       <label className="block text-[10px] uppercase tracking-wider mb-1 opacity-70">Image URL</label>
+                       <input 
+                         readOnly
+                         type="text" 
+                         value={outputUrl}
+                         onClick={(e) => e.currentTarget.select()}
+                         className="w-full px-2 py-1 text-[10px] rounded bg-transparent border focus:outline-none"
+                         style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}
+                       />
+                     </div>
+                   </>
                  )}
               </div>
             )}
