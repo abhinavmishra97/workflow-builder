@@ -96,7 +96,9 @@ export async function runWorkflow(
           });
         }
 
-        throw error;
+        // Do not throw error here, so the loop continues to other nodes.
+        // If a downstream node depends on this one, it will likely fail 
+        // when it checks for missing inputs.
       }
     }
 
