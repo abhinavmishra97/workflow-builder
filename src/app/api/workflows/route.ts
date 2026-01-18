@@ -2,6 +2,8 @@ import { auth } from '@clerk/nextjs/server'
 import prisma from '@/lib/prisma'
 import { NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/workflows - Get all workflows for the current user
 export async function GET() {
     try {
