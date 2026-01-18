@@ -1,9 +1,9 @@
 "use client";
 
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useMemo, useState, useEffect } from "react";
 import { Handle, Position, useReactFlow, type NodeProps } from "reactflow";
 import { useWorkflowStore } from "@/store/workflowStore";
-import { Film } from "lucide-react";
+import { Film, Play, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 
 export type ExtractFrameNodeData = {
   videoUrl: string | null;
@@ -14,14 +14,24 @@ export type ExtractFrameNodeData = {
 function ExtractFrameNode({ id, data, selected }: NodeProps<ExtractFrameNodeData>) {
   const { nodeResults, updateNode, nodeStatus } = useWorkflowStore();
   const { getEdges, getNodes } = useReactFlow();
+  const [isOutputExpanded, setIsOutputExpanded] = useState(false);
   
   const status = nodeStatus[id] || "idle";
+  const result = nodeResults[id];
+  const outputUrl = typeof result?.output === "string" ? result.output : "";
 
   const nodeData: ExtractFrameNodeData = {
     videoUrl: data?.videoUrl ?? null,
     timestamp: data?.timestamp ?? "0",
     label: data?.label ?? "Extract Frame",
   };
+  
+  // Local state for timestamp to avoid continuous updates
+  const [localTimestamp, setLocalTimestamp] = useState(nodeData.timestamp);
+
+  useEffect(() => {
+    setLocalTimestamp(nodeData.timestamp);
+  }, [nodeData.timestamp]);
 
   const edges = getEdges();
   const hasVideoUrlConnection = edges.some(
@@ -61,28 +71,72 @@ function ExtractFrameNode({ id, data, selected }: NodeProps<ExtractFrameNodeData
 
   const handleVideoUrlChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
+      const node = getNodes().find(n => n.id === id);
+      if (!node) return;
       updateNode(id, {
         data: {
-          ...nodeData,
+          ...node.data,
           videoUrl: e.target.value,
         },
       });
     },
-    [id, nodeData, updateNode]
+    [id, getNodes, updateNode]
   );
 
-  const handleTimestampChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newValue = e.target.value;
+  const updateTimestamp = useCallback((value: string) => {
+      const node = getNodes().find(n => n.id === id);
+      if (!node) return;
       updateNode(id, {
         data: {
-          ...nodeData,
-          timestamp: newValue,
+          ...node.data,
+          timestamp: value,
         },
       });
-    },
-    [id, nodeData, updateNode]
-  );
+  }, [id, getNodes, updateNode]);
+
+  const handleRun = useCallback(async () => {
+    const videoUrl = aggregatedVideoUrl || nodeData.videoUrl;
+    
+    if (!videoUrl) {
+      console.error("No video URL provided");
+      return;
+    }
+
+    useWorkflowStore.getState().setNodeStatus(id, "running");
+
+    try {
+      const response = await fetch("/api/trigger/extract-frame", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          videoUrl,
+          timestamp: nodeData.timestamp,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Frame extraction failed");
+      }
+
+      useWorkflowStore.getState().setNodeResult(id, {
+        output: result.extractedFrameUrl,
+        timestamp: Date.now(),
+      });
+
+      useWorkflowStore.getState().setNodeStatus(id, "success");
+      setIsOutputExpanded(true);
+    } catch (error) {
+      console.error("[Extract Frame Node] Execution error:", error);
+      useWorkflowStore.getState().setNodeStatus(id, "failed");
+      
+      useWorkflowStore.getState().setNodeResult(id, {
+        output: error instanceof Error ? error.message : "Execution failed",
+        timestamp: Date.now(),
+      });
+    }
+  }, [id, aggregatedVideoUrl, nodeData]);
 
   const getStatusStyle = () => {
     if (status === "running") {
@@ -116,7 +170,7 @@ function ExtractFrameNode({ id, data, selected }: NodeProps<ExtractFrameNodeData
 
   return (
     <div
-      className="rounded-xl overflow-hidden min-w-[260px]"
+      className="rounded-xl overflow-hidden w-80 shadow-sm"
       style={{
         backgroundColor: "var(--card)",
         border: "1px solid",
@@ -156,7 +210,7 @@ function ExtractFrameNode({ id, data, selected }: NodeProps<ExtractFrameNodeData
             position={Position.Left}
             id="video_url"
             className="w-3 h-3"
-            style={{ backgroundColor: "var(--text-muted)", top: "30%" }}
+            style={{ backgroundColor: "var(--text-muted)", top: "20%" }}
           />
           <input
             type="text"
@@ -184,8 +238,15 @@ function ExtractFrameNode({ id, data, selected }: NodeProps<ExtractFrameNodeData
           </label>
           <input
             type="text"
-            value={nodeData.timestamp}
-            onChange={handleTimestampChange}
+            value={localTimestamp}
+            onChange={(e) => setLocalTimestamp(e.target.value)}
+            onBlur={() => updateTimestamp(localTimestamp)}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                    updateTimestamp(localTimestamp);
+                    e.currentTarget.blur();
+                }
+            }}
             placeholder="0 or 50%"
             className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none transition-all"
             style={{
@@ -194,35 +255,94 @@ function ExtractFrameNode({ id, data, selected }: NodeProps<ExtractFrameNodeData
               border: "1px solid var(--border)",
             }}
           />
-          <div className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
-            Enter a number (e.g., 10) or percentage (e.g., 50%)
+          <div className="mt-1 text-[10px] opacity-70" style={{ color: "var(--text-secondary)" }}>
+            Use '10' for 10s or '50%' for middle
           </div>
         </div>
 
-        {/* Preview Info */}
-        {aggregatedVideoUrl && (
-          <div
-            className="mt-2 p-3 rounded-lg text-xs"
+        {/* Run Button */}
+        <button
+          onClick={handleRun}
+          disabled={status === "running" || (!aggregatedVideoUrl && !nodeData.videoUrl)}
+          className={`w-full mt-3 px-3 py-2 text-xs font-medium rounded flex items-center justify-center gap-2 transition-colors ${
+            status === "running" || (!aggregatedVideoUrl && !nodeData.videoUrl)
+              ? "opacity-50 cursor-not-allowed bg-gray-200 text-gray-500"
+              : "bg-blue-600 text-white hover:bg-blue-700"
+          }`}
+        >
+          {status === "running" ? (
+            <>
+              <Loader2 className="w-3 h-3 animate-spin" />
+              <span>Processing...</span>
+            </>
+          ) : (
+            <>
+              <Play className="w-3 h-3" />
+              <span>Extract Frame</span>
+            </>
+          )}
+        </button>
+
+        {/* Result Display */}
+        {outputUrl && (
+          <div 
+            className="mt-3 border rounded overflow-hidden"
             style={{
-              backgroundColor: "var(--hover)",
-              color: "var(--text-secondary)",
-              border: "1px solid var(--border)",
+              borderColor: status === "failed" ? "var(--danger)" : "var(--success)",
+              backgroundColor: "var(--bg)",
             }}
           >
-            <div>Video: Connected</div>
-            <div>Timestamp: {nodeData.timestamp}</div>
+            <button
+              onClick={() => setIsOutputExpanded(!isOutputExpanded)}
+              className="w-full px-3 py-2 text-xs font-semibold flex items-center justify-between transition-colors"
+              style={{
+                backgroundColor: status === "failed" ? "var(--danger)" : "var(--success)",
+                color: "white",
+              }}
+            >
+              <span>{status === "failed" ? "✗ Error" : "✓ Result"}</span>
+              {isOutputExpanded ? (
+                <ChevronUp className="w-3 h-3" />
+              ) : (
+                <ChevronDown className="w-3 h-3" />
+              )}
+            </button>
+            {isOutputExpanded && (
+              <div className="p-0 bg-black/5">
+                 {status === "failed" ? (
+                   <div className="p-3 text-xs text-red-500 break-words">{outputUrl}</div>
+                 ) : (
+                   <div className="relative w-full aspect-video">
+                      <img 
+                        src={outputUrl} 
+                        alt="Extracted frame" 
+                        className="w-full h-full object-contain"
+                      />
+                      <a 
+                        href={outputUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="absolute bottom-1 right-1 text-[10px] bg-black/70 text-white px-2 py-0.5 rounded hover:bg-black"
+                      >
+                        Open
+                      </a>
+                   </div>
+                 )}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Output Handle */}
-        <Handle
-          type="source"
-          position={Position.Right}
-          id="output"
-          className="w-3 h-3"
-          style={{ backgroundColor: "var(--purple-glow)" }}
-        />
       </div>
+      
+      {/* Output Handle */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="output"
+        className="w-3 h-3"
+        style={{ backgroundColor: "var(--purple-glow)" }}
+      />
     </div>
   );
 }

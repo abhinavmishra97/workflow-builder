@@ -247,6 +247,51 @@ async function executeNode(
 
 
   /* =======================
+        EXTRACT FRAME NODE
+     ======================= */
+  if (node.type === "extractFrame") {
+    const data = node.data as {
+      videoUrl?: string | null;
+      timestamp?: string;
+    };
+
+    let videoUrl = data.videoUrl;
+
+    // Resolve videoUrl from connected UploadVideo node
+    const videoEdge = allEdges.find(
+      (e) => e.target === node.id && e.targetHandle === "video_url"
+    );
+
+    if (videoEdge) {
+      const upstream = nodeResults[videoEdge.source];
+      if (typeof upstream === "string") {
+        videoUrl = upstream;
+      }
+    }
+
+    if (!videoUrl) {
+      throw new Error("ExtractFrame node requires a video input");
+    }
+
+    const res = await fetch("/api/trigger/extract-frame", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        videoUrl,
+        timestamp: data.timestamp || "0",
+      }),
+    });
+
+    const result = await res.json();
+
+    if (!res.ok || !result.success) {
+      throw new Error(result.error || "Frame extraction failed");
+    }
+
+    return result.extractedFrameUrl;
+  }
+
+  /* =======================
      SIMPLE / MOCK NODES
      ======================= */
   if (node.type === "text") {
