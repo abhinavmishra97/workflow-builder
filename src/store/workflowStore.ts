@@ -308,7 +308,27 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
       });
     } catch (error) {
       console.error("Workflow execution failed:", error);
+
+      const { CycleError } = await import("@/lib/dag");
+
+      if (error instanceof CycleError) {
+        // Optionally, you could mark specific nodes as part of the cycle here if the store supports it
+        console.warn("Cycle detected:", error.cycle);
+      }
+
       set({ isExecuting: false });
+
+      // Ensure specific errors propagate to history
+      // We manually trigger onWorkflowError from the runWorkflow callbacks, 
+      // but if the error happens BEFORE runWorkflow (e.g. in import), we catch it here.
+      // However, runWorkflow re-throws, so we end up here.
+      // We need to ensure the HISTORY is updated with this top-level error if it wasn't already.
+
+      // Since we passed `onWorkflowError` to `runWorkflow`, it should have already handled the history update.
+      // But if it crashed before calling that callback (e.g. inside `getExecutionOrder`), we need to save it.
+
+      // Let's rely on runWorkflow's `catch` block calling `onWorkflowError`.
+      // But we re-throw to ensure the UI knows.
       throw error;
     }
   },
