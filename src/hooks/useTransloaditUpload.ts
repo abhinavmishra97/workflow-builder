@@ -70,8 +70,8 @@ export function useTransloaditUpload() {
                     assemblyOptions: {
                         params: assemblyParams,
                     },
-                    waitForEncoding: false, // Don't wait for full encoding, just upload
-                    waitForMetadata: false,
+                    waitForEncoding: true, // Wait for assembly to complete
+                    waitForMetadata: true, // Wait for metadata to be available
                 });
 
                 uppy.on(
@@ -100,8 +100,19 @@ export function useTransloaditUpload() {
 
                         let url: string | undefined;
 
-                        // Try to get URL from assembly results
-                        if (assembly?.results) {
+                        // First try to get from uploaded files (this is where files go without templates)
+                        if (assembly?.uploads) {
+                            console.log("Assembly uploads:", assembly.uploads);
+                            const uploadKeys = Object.keys(assembly.uploads);
+                            if (uploadKeys.length > 0) {
+                                const firstUpload = assembly.uploads[uploadKeys[0]];
+                                url = firstUpload?.ssl_url || firstUpload?.url;
+                                console.log("URL from uploads:", url);
+                            }
+                        }
+
+                        // If not found in uploads, try to get URL from assembly results (for template-based uploads)
+                        if (!url && assembly?.results) {
                             console.log("Assembly results:", assembly.results);
 
                             // First try :original step
@@ -126,17 +137,6 @@ export function useTransloaditUpload() {
                                         }
                                     }
                                 }
-                            }
-                        }
-
-                        // Fallback: try to get from uploaded files
-                        if (!url && assembly?.uploads) {
-                            console.log("Assembly uploads:", assembly.uploads);
-                            const uploadKeys = Object.keys(assembly.uploads);
-                            if (uploadKeys.length > 0) {
-                                const firstUpload = assembly.uploads[uploadKeys[0]];
-                                url = firstUpload?.ssl_url || firstUpload?.url;
-                                console.log("URL from uploads:", url);
                             }
                         }
 

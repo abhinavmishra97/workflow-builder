@@ -46,7 +46,14 @@ function UploadImageNode({ id, data, selected }: NodeProps<UploadImageNodeData>)
       if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
         const errorMsg = `Invalid file type. Accepted types: ${ACCEPTED_FILE_EXTENSIONS.join(", ")}`;
         setError(errorMsg);
-        updateNode(id, { data: { ...nodeData, error: errorMsg } });
+        updateNode(id, { 
+          data: { 
+            imageUrl: data?.imageUrl ?? null,
+            label: data?.label ?? "Upload Image",
+            isUploading: false,
+            error: errorMsg 
+          } 
+        });
         return;
       }
 
@@ -54,7 +61,14 @@ function UploadImageNode({ id, data, selected }: NodeProps<UploadImageNodeData>)
       if (file.size > maxSize) {
         const errorMsg = "File size exceeds 10MB limit";
         setError(errorMsg);
-        updateNode(id, { data: { ...nodeData, error: errorMsg } });
+        updateNode(id, { 
+          data: { 
+            imageUrl: data?.imageUrl ?? null,
+            label: data?.label ?? "Upload Image",
+            isUploading: false,
+            error: errorMsg 
+          } 
+        });
         return;
       }
 
@@ -65,17 +79,29 @@ function UploadImageNode({ id, data, selected }: NodeProps<UploadImageNodeData>)
         templateId: process.env.NEXT_PUBLIC_TRANSLOADIT_TEMPLATE_IMAGE,
         allowedFileTypes: ACCEPTED_FILE_TYPES,
         onSuccess: (url) => {
+          console.log("Upload successful, URL:", url);
           updateNode(id, {
-            data: { ...nodeData, imageUrl: url, isUploading: false, error: undefined },
+            data: { 
+              imageUrl: url, 
+              label: data?.label ?? "Upload Image",
+              isUploading: false, 
+              error: undefined 
+            },
           });
           setNodeResult(id, { output: url, timestamp: Date.now() });
           setIsUploading(false);
         },
         onError: (errorMessage) => {
+          console.error("Upload failed:", errorMessage);
           setError(errorMessage);
           setIsUploading(false);
           updateNode(id, {
-            data: { ...nodeData, isUploading: false, error: errorMessage },
+            data: { 
+              imageUrl: data?.imageUrl ?? null,
+              label: data?.label ?? "Upload Image",
+              isUploading: false, 
+              error: errorMessage 
+            },
           });
         },
         onProgress: (progress) => {
@@ -87,14 +113,21 @@ function UploadImageNode({ id, data, selected }: NodeProps<UploadImageNodeData>)
         fileInputRef.current.value = "";
       }
     },
-    [id, nodeData, updateNode, setNodeResult, upload]
+    [id, data, updateNode, setNodeResult, upload]
   );
 
   const handleRemoveImage = useCallback(() => {
-    updateNode(id, { data: { ...nodeData, imageUrl: null, error: undefined } });
+    updateNode(id, { 
+      data: { 
+        imageUrl: null, 
+        label: data?.label ?? "Upload Image",
+        isUploading: false,
+        error: undefined 
+      } 
+    });
     setNodeResult(id, { output: null, timestamp: Date.now() });
     setError(undefined);
-  }, [id, nodeData, updateNode, setNodeResult]);
+  }, [id, data, updateNode, setNodeResult]);
 
   const handleClick = useCallback(() => {
     if (!hasInputConnection && !isUploading && fileInputRef.current) {

@@ -147,13 +147,22 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
       })
       .filter((url): url is string => url !== null);
 
-    return {
+    const finalInputs = {
       systemPrompt:
         systemPromptFromResults.join("\n") || systemPromptValues.join("\n") || nodeData.systemPrompt,
       userMessage:
         userMessageFromResults.join("\n") || userMessageValues.join("\n") || nodeData.userMessage,
       images: imagesFromResults.length > 0 ? imagesFromResults : imageUrls,
     };
+
+    console.log("[LLM Node] Aggregated inputs calculated:", {
+      systemPromptEdges: systemPromptEdges.length,
+      userMessageEdges: userMessageEdges.length,
+      imageEdges: imageEdges.length,
+      finalInputs,
+    });
+
+    return finalInputs;
   }, [edges, getNodes, nodeResults, id, nodeData.systemPrompt, nodeData.userMessage]);
 
   const handleModelChange = useCallback(
@@ -193,6 +202,10 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
   );
 
   const handleRun = useCallback(async () => {
+    console.log("[LLM Node] Starting execution...");
+    console.log("[LLM Node] Aggregated inputs:", aggregatedInputs);
+    console.log("[LLM Node] Node data:", nodeData);
+    
     // Set loading state
     setNodeStatus(id, "running");
     
@@ -204,21 +217,34 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
         throw new Error("User message is required");
       }
 
+      const requestBody = {
+        systemPrompt: aggregatedInputs.systemPrompt || nodeData.systemPrompt || undefined,
+        userMessage: userMessage.trim(),
+        model: nodeData.model || "gemini-2.5-flash",
+        imageUrls: aggregatedInputs.images.length > 0 ? aggregatedInputs.images : undefined,
+      };
+
+      console.log("[LLM Node] Request body:", requestBody);
+
       // Call the LLM API
       const response = await fetch("/api/trigger/execute-llm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          systemPrompt: aggregatedInputs.systemPrompt || nodeData.systemPrompt || undefined,
-          userMessage: userMessage.trim(),
-          model: nodeData.model || "gemini-2.5-flash",
-          imageUrls: aggregatedInputs.images.length > 0 ? aggregatedInputs.images : undefined,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
-      const result = await response.json();
+      console.log("[LLM Node] Response status:", response.status);
 
-      if (!response.ok || !result.success) {
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[LLM Node] Response error:", errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log("[LLM Node] Response result:", result);
+
+      if (!result.success) {
         throw new Error(result.error || "LLM execution failed");
       }
 
@@ -229,13 +255,15 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
       });
 
       setNodeStatus(id, "success");
+      console.log("[LLM Node] Execution successful");
     } catch (error) {
       console.error("[LLM Node] Execution error:", error);
       setNodeStatus(id, "failed");
       
-      // Optionally show error in result
+      // Show error in result
+      const errorMessage = error instanceof Error ? error.message : "Execution failed";
       useWorkflowStore.getState().setNodeResult(id, {
-        output: error instanceof Error ? error.message : "Execution failed",
+        output: `Error: ${errorMessage}`,
         timestamp: Date.now(),
       });
     }
@@ -402,9 +430,9 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
             position={Position.Left}
             id="images"
             className="w-3 h-3"
-            style={{ backgroundColor: "var(--text-muted)", top: "80%" }}
+            style={{ backgroundColor: "var(--purple-glow)", top: "80%" }}
           />
-          {hasImageConnections && aggregatedInputs.images.length > 0 ? (
+          {hasImageConnections ? (
             <div
               className="px-3 py-2 text-xs rounded-lg"
               style={{
@@ -413,7 +441,18 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
                 border: "1px solid var(--border)",
               }}
             >
-              {aggregatedInputs.images.length} image(s) connected
+              {aggregatedInputs.images.length > 0 ? (
+                <div>
+                  <div className="font-semibold mb-1">{aggregatedInputs.images.length} image(s) connected</div>
+                  {aggregatedInputs.images.map((url, idx) => (
+                    <div key={idx} className="text-xs truncate" style={{ color: "var(--text-muted)" }}>
+                      {url}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div>Image connected (waiting for upload...)</div>
+              )}
             </div>
           ) : (
             <div
