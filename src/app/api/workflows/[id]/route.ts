@@ -1,17 +1,17 @@
 import { auth } from '@clerk/nextjs/server'
 import prisma from '@/lib/prisma'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from "next/server";
 
 // GET /api/workflows/[id] - Get a specific workflow
 export async function GET(
-    request: Request,
+    request: NextRequest,
     context: { params: Promise<{ id: string }> }
 ) {
     try {
         const { userId } = await auth()
         const { id } = await context.params
 
-        if (!userId) {
+        if (!userId) {  
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
