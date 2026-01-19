@@ -11,6 +11,7 @@ import ReactFlow, {
   type EdgeChange,
   applyNodeChanges,
   applyEdgeChanges,
+  ConnectionMode,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { useWorkflowStore } from "@/store/workflowStore";
@@ -689,6 +690,8 @@ export default function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
             onNodesChange={handleNodesChange}
             onEdgesChange={handleEdgesChange}
             onConnect={handleConnect}
+            connectionMode={ConnectionMode.Loose}
+            connectOnClick={false}
             // fitView // Removed to default to 100% zoom
             // fitViewOptions={fitViewOptions}
             minZoom={0.1}

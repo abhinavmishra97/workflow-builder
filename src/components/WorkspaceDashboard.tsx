@@ -16,9 +16,11 @@ import {
   LogOut,
   Edit,
   Menu,
-  X
+  X,
+  Trash2
 } from "lucide-react";
 import Image from "next/image";
+import { useClerk } from "@clerk/nextjs";
 
 // Mock data for workflow library (templates)
 const mockWorkflowLibrary = [
@@ -85,6 +87,7 @@ export default function WorkspaceDashboard({ userName = "Abhinav Mishra" }: Work
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; fileId: string | null; fileName: string }>({ isOpen: false, fileId: null, fileName: "" });
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Fetch workflows from database
@@ -150,10 +153,38 @@ export default function WorkspaceDashboard({ userName = "Abhinav Mishra" }: Work
     }
   };
 
-  const handleLogout = () => {
-    // Implement logout logic here
+  const { signOut } = useClerk();
+
+  const handleLogout = async () => {
     console.log("Logging out...");
+    await signOut();
     router.push("/");
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, file: WorkflowFile) => {
+    e.stopPropagation();
+    setDeleteConfirmation({ isOpen: true, fileId: file.id, fileName: file.name });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirmation.fileId) return;
+
+    try {
+      const response = await fetch(`/api/workflows/${deleteConfirmation.fileId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setUserFiles((prev) => prev.filter((f) => f.id !== deleteConfirmation.fileId));
+        setDeleteConfirmation({ isOpen: false, fileId: null, fileName: "" });
+      } else {
+        console.error("Failed to delete file");
+        alert("Failed to delete file");
+      }
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      alert("Error deleting file");
+    }
   };
 
   // Filter files based on search query
@@ -565,13 +596,23 @@ export default function WorkspaceDashboard({ userName = "Abhinav Mishra" }: Work
                 {filteredFiles.map((file) => (
                   <div
                     key={file.id}
-                    className="rounded-lg overflow-visible cursor-pointer transition-transform hover:scale-105"
+                    className="rounded-lg overflow-visible cursor-pointer transition-transform hover:scale-105 relative group"
                     style={{
                       backgroundColor: "var(--card)",
                       border: "1px solid var(--border)",
                     }}
                     onClick={() => handleFileClick(file.id)}
                   >
+                    <button
+                      onClick={(e) => handleDeleteClick(e, file)}
+                      className="absolute top-2 right-2 p-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-all z-10"
+                      style={{ color: "var(--text-muted)" }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = "var(--danger)"}
+                      onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-muted)"}
+                      title="Delete file"
+                    >
+                       <Trash2 className="w-4 h-4" />
+                    </button>
                     <div
                       className="w-full h-[180px] flex items-center justify-center"
                       style={{ backgroundColor: "var(--hover)" }}
@@ -611,7 +652,8 @@ export default function WorkspaceDashboard({ userName = "Abhinav Mishra" }: Work
                   <div className="col-span-5">Name</div>
                   <div className="col-span-2">Files</div>
                   <div className="col-span-3">Last modified ↓</div>
-                  <div className="col-span-2">Created at</div>
+                  <div className="col-span-1">Created at</div>
+                  <div className="col-span-1 text-right">Actions</div>
                 </div>
 
                 {/* Table Rows */}
@@ -647,8 +689,20 @@ export default function WorkspaceDashboard({ userName = "Abhinav Mishra" }: Work
                     <div className="col-span-3 text-sm" style={{ color: "var(--text-primary)" }}>
                       {formatTimeAgo(file.updatedAt)}
                     </div>
-                    <div className="col-span-2 text-sm" style={{ color: "var(--text-primary)" }}>
-                      {file.createdAt}
+                    <div className="col-span-1 text-sm truncate" style={{ color: "var(--text-primary)" }}>
+                      {new Date(file.createdAt).toLocaleDateString()}
+                    </div>
+                    <div className="col-span-1 flex justify-end">
+                       <button
+                         onClick={(e) => handleDeleteClick(e, file)}
+                         className="p-1.5 transition-colors"
+                         style={{ color: "var(--text-muted)" }}
+                         onMouseEnter={(e) => e.currentTarget.style.color = "var(--danger)"}
+                         onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-muted)"}
+                         title="Delete"
+                       >
+                         <Trash2 className="w-4 h-4" />
+                       </button>
                     </div>
                   </div>
                 ))}
@@ -657,6 +711,47 @@ export default function WorkspaceDashboard({ userName = "Abhinav Mishra" }: Work
           </div>
         </div>
       </div>
+      {/* Custom Delete Confirmation Modal */}
+      {deleteConfirmation.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div
+            className="rounded-lg shadow-xl p-6 w-full max-w-md"
+            style={{
+              backgroundColor: "var(--card)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <h3 className="text-lg font-bold mb-2" style={{ color: "var(--text-primary)" }}>
+              Delete File?
+            </h3>
+            <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>
+              Are you sure you want to delete <span className="font-semibold text-white">{deleteConfirmation.fileName}</span>? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteConfirmation({ isOpen: false, fileId: null, fileName: "" })}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                style={{
+                  backgroundColor: "var(--hover)",
+                  color: "var(--text-primary)",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-red-600"
+                style={{
+                  backgroundColor: "var(--danger)",
+                  color: "white",
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

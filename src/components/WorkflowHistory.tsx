@@ -333,7 +333,7 @@ export default function WorkflowHistory() {
 
   return (
     <div
-      className="h-full flex border-l transition-all duration-300 relative"
+      className={`h-full flex border-l relative ${isResizing ? "" : "transition-all duration-300"}`}
       style={{
         width: isCollapsed ? "48px" : `${sidebarWidth}px`,
         backgroundColor: "var(--bg)",
@@ -387,26 +387,28 @@ export default function WorkflowHistory() {
         </div>
       ) : (
         /* Expanded state - full sidebar */
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col overflow-hidden w-full">
           {/* Header */}
           <div
-            className="px-4 py-3 border-b flex items-center justify-between"
+            className="px-4 py-3 border-b flex items-center justify-between shrink-0"
             style={{
               backgroundColor: "var(--sidebar)",
               borderColor: "var(--border)",
+              width: `${sidebarWidth}px`, // Force width to match sidebar to prevent shrinking
+              minWidth: "300px" // Ensure it doesn't collapse below min width
             }}
           >
-            <div>
-              <h2 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
+            <div className="shrink-0">
+              <h2 className="text-sm font-bold whitespace-nowrap" style={{ color: "var(--text-primary)" }}>
                 Workflow History
               </h2>
               {runs.length > 0 && (
-                <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                <p className="text-xs mt-1 whitespace-nowrap" style={{ color: "var(--text-muted)" }}>
                   {runs.length} run{runs.length !== 1 ? "s" : ""}
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               {runs.length > 0 && (
                 <button
                   onClick={clearHistory}
