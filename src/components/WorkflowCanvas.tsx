@@ -60,6 +60,10 @@ export default function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [workflowName, setWorkflowName] = useState("Untitled Workflow");
   const [isEditingName, setIsEditingName] = useState(false);
+  const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
+
+  const hasFittedRef = useRef(false);
+
 
   // Load workflow data
   useEffect(() => {
@@ -128,6 +132,16 @@ export default function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
 
     loadWorkflow();
   }, [workflowId, setNodes, setEdges]);
+
+  // Center view on initial load
+  useEffect(() => {
+    if (isLoaded && reactFlowInstance && nodes.length > 0 && !hasFittedRef.current) {
+      hasFittedRef.current = true;
+      setTimeout(() => {
+        reactFlowInstance.fitView({ minZoom: 1, maxZoom: 1, duration: 200 });
+      }, 50);
+    }
+  }, [isLoaded, reactFlowInstance, nodes.length]);
 
   // Auto-save workflow data
   useEffect(() => {
@@ -265,7 +279,6 @@ export default function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
     };
     reader.readAsText(file);
   }, [setNodes, setEdges]);
-  const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [selectionMode, setSelectionMode] = useState<"pointer" | "hand">("pointer");
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -662,13 +675,13 @@ export default function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
             className={selectionMode === "hand" ? "hand-mode" : ""}
             onInit={(instance) => {
               setReactFlowInstance(instance);
-              instance.fitView(fitViewOptions);
+              instance.setViewport({ x: 0, y: 0, zoom: 1 });
             }}
             onNodesChange={handleNodesChange}
             onEdgesChange={handleEdgesChange}
             onConnect={handleConnect}
-            fitView
-            fitViewOptions={fitViewOptions}
+            // fitView // Removed to default to 100% zoom
+            // fitViewOptions={fitViewOptions}
             minZoom={0.1}
             maxZoom={2}
             defaultViewport={{ x: 0, y: 0, zoom: 1 }}

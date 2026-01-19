@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { MousePointer2, Hand, ZoomIn, ZoomOut, Undo2, Redo2, ChevronDown } from "lucide-react";
-import { useReactFlow } from "reactflow";
+import { useReactFlow, useOnViewportChange } from "reactflow";
 import { useUndoRedoStore } from "@/store/undoRedoStore";
 import { useWorkflowStore } from "@/store/workflowStore";
 
@@ -18,7 +18,14 @@ export default function BottomToolbar({ selectionMode, setSelectionMode }: Botto
   const [zoom, setZoom] = useState(100);
   const [showZoomMenu, setShowZoomMenu] = useState(false);
 
-  // Update zoom percentage when zoom changes
+  // Sync zoom with viewport changes (including mouse wheel)
+  useOnViewportChange({
+    onChange: (viewport) => {
+      setZoom(Math.round(viewport.zoom * 100));
+    },
+  });
+
+  // Update zoom percentage when zoom changes locally
   const handleZoomChange = () => {
     const currentZoom = getZoom();
     setZoom(Math.round(currentZoom * 100));

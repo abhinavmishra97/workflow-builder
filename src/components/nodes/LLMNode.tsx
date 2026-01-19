@@ -560,7 +560,7 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
           <div 
             className="mt-3 border rounded-lg overflow-hidden"
             style={{
-              borderColor: "var(--success)",
+              borderColor: status === "failed" ? "var(--danger)" : "var(--success)",
               backgroundColor: "var(--bg)",
             }}
           >
@@ -568,11 +568,11 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
               onClick={() => setIsOutputExpanded(!isOutputExpanded)}
               className="w-full px-3 py-2 text-xs font-semibold flex items-center justify-between transition-colors"
               style={{
-                backgroundColor: "var(--success)",
+                backgroundColor: status === "failed" ? "var(--danger)" : "var(--success)",
                 color: "white",
               }}
             >
-              <span>✓ Result</span>
+              <span>{status === "failed" ? "✗ Error" : "✓ Result"}</span>
               {isOutputExpanded ? (
                 <ChevronUp className="w-4 h-4" />
               ) : (
@@ -583,7 +583,7 @@ function LLMNode({ id, data, selected }: NodeProps<LLMNodeData>) {
               <div 
                 className="px-3 py-2 text-xs max-h-48 overflow-y-auto"
                 style={{
-                  color: "var(--text-primary)",
+                  color: status === "failed" ? "var(--danger)" : "var(--text-primary)",
                   backgroundColor: "var(--card)",
                   whiteSpace: "pre-wrap",
                   wordBreak: "break-word",
