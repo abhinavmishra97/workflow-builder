@@ -23,7 +23,7 @@ import ExtractFrameNode from "@/components/nodes/ExtractFrameNode";
 import NodePalette from "@/components/NodePalette";
 import WorkflowHistory from "@/components/WorkflowHistory";
 import BottomToolbar from "@/components/BottomToolbar";
-import { Play } from "lucide-react";
+import { Play, Download, Upload } from "lucide-react";
 import {
   createTextNode,
   createUploadImageNode,
@@ -201,6 +201,70 @@ export default function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
   }, [workflowId, workflowName]);
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExport = useCallback(() => {
+    const data = {
+      name: workflowName,
+      nodes,
+      edges,
+      exportedAt: new Date().toISOString(),
+    };
+    
+    const jsonString = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${workflowName.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'workflow'}.json`;
+    document.body.appendChild(link);
+    link.click();
+    
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [workflowName, nodes, edges]);
+
+  const handleImportClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const result = e.target?.result as string;
+        const data = JSON.parse(result);
+
+        if (data.nodes && Array.isArray(data.nodes)) {
+          setNodes(data.nodes);
+        }
+        if (data.edges && Array.isArray(data.edges)) {
+          setEdges(data.edges);
+        }
+        if (data.name) {
+          setWorkflowName(data.name);
+          // Optionally save the new name to backend immediately? 
+          // Best to let the user see it first or rely on the rename effect if we had one.
+          // But our handleRename is manual. Let's just set state.
+        }
+        
+        // Clear input value so same file can be selected again if needed
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+        
+        console.log("Workflow imported successfully");
+      } catch (error) {
+        console.error("Failed to parse workflow file:", error);
+        alert("Invalid workflow file format");
+      }
+    };
+    reader.readAsText(file);
+  }, [setNodes, setEdges]);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [selectionMode, setSelectionMode] = useState<"pointer" | "hand">("pointer");
 
@@ -488,6 +552,43 @@ export default function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
+          {/* Import / Export */}
+          <button
+            onClick={handleImportClick}
+            className="px-3 py-2 rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2 text-sm font-medium"
+            title="Import Workflow"
+            style={{
+              color: "var(--text-secondary)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <Upload className="w-4 h-4" />
+            <span>Import</span>
+          </button>
+          
+          <button
+            onClick={handleExport}
+            className="px-3 py-2 rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2 text-sm font-medium"
+            title="Export Workflow"
+            style={{
+              color: "var(--text-secondary)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <Download className="w-4 h-4" />
+            <span>Export</span>
+          </button>
+
+          <input
+             type="file"
+             ref={fileInputRef}
+             className="hidden"
+             accept=".json"
+             onChange={handleFileChange}
+          />
+
+          <div className="w-px h-6 mx-1" style={{ backgroundColor: "var(--border)" }} />
+
           {/* Run Selected Button */}
           <button
             onClick={handleRunSelected}
