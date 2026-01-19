@@ -34,6 +34,9 @@ export async function GET(
                 runs: {
                     orderBy: { createdAt: 'desc' },
                     take: 10,
+                    include: {
+                        nodeExecutions: true
+                    }
                 },
             },
         })

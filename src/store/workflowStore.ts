@@ -182,9 +182,35 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
     const { useWorkflowHistoryStore } = await import("@/store/workflowHistoryStore");
     const historyStore = useWorkflowHistoryStore.getState();
 
-    // Create new run
-    const runId = `Run #${Date.now()}`;
+    const workflowId = state.workflowId;
+    let dbRunId: string | null = null;
+    let localRunId = `Run #${Date.now()}`;
     const startTime = Date.now();
+
+    // 1. Create run in DB if workflow is saved
+    if (workflowId) {
+      try {
+        const res = await fetch("/api/workflow/create-run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workflowId,
+            nodes: state.nodes,
+            scope: "full",
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          dbRunId = data.runId;
+          // Optionally use the DB ID as the local ID, or keep them separate. 
+          // Using DB ID ensures consistency if we reload.
+          localRunId = data.runId;
+        }
+      } catch (err) {
+        console.error("Failed to create DB run:", err);
+      }
+    }
+
     const nodeExecutionResults: Array<{
       nodeId: string;
       nodeType: string;
@@ -199,7 +225,7 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
 
     // Add initial run to history
     historyStore.addRun({
-      runId,
+      runId: localRunId,
       scope: "full",
       status: "running",
       startedAt: startTime,
@@ -241,16 +267,37 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
             }
           }
         },
-        setNodeResult: (nodeId, result) => {
+        setNodeResult: async (nodeId, result) => {
           get().setNodeResult(nodeId, result);
 
           // Update node result in history
           const nodeResult = nodeExecutionResults.find(r => r.nodeId === nodeId);
           if (nodeResult) {
-            nodeResult.output = result;
+            nodeResult.output = result.output;
+          }
+
+          // Persist node success to DB
+          if (dbRunId && nodeResult) {
+            const node = state.nodes.find(n => n.id === nodeId);
+            try {
+              await fetch("/api/workflow/update-node", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  runId: dbRunId,
+                  nodeId,
+                  nodeType: nodeResult.nodeType,
+                  nodeName: nodeResult.nodeName,
+                  status: "success",
+                  output: result.output,
+                }),
+              });
+            } catch (err) {
+              console.error("Failed to persist node result:", err);
+            }
           }
         },
-        onNodeError: (nodeId: string, error: Error) => {
+        onNodeError: async (nodeId: string, error: Error) => {
           // Update store with error so it shows on the node
           get().setNodeResult(nodeId, {
             output: error.message,
@@ -260,7 +307,6 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
           let nodeResult = nodeExecutionResults.find(r => r.nodeId === nodeId);
 
           if (!nodeResult) {
-            // If node failed immediately (e.g. validaton error), it might not have an entry yet
             const node = state.nodes.find(n => n.id === nodeId);
             if (node) {
               nodeResult = {
@@ -280,15 +326,35 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
             nodeResult.completedAt = Date.now();
             nodeResult.duration = (nodeResult.completedAt || 0) - nodeResult.startedAt;
           }
+
+          // Persist node error to DB
+          if (dbRunId && nodeResult) {
+            try {
+              await fetch("/api/workflow/update-node", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  runId: dbRunId,
+                  nodeId,
+                  nodeType: nodeResult?.nodeType,
+                  nodeName: nodeResult?.nodeName,
+                  status: "failed",
+                  error: error.message,
+                }),
+              });
+            } catch (err) {
+              console.error("Failed to persist node error:", err);
+            }
+          }
         },
-        onWorkflowComplete: () => {
+        onWorkflowComplete: async () => {
           const endTime = Date.now();
           const duration = endTime - startTime;
           const successfulNodes = nodeExecutionResults.filter(r => r.status === "success").length;
           const failedNodes = nodeExecutionResults.filter(r => r.status === "failed").length;
 
           // Update run in history
-          historyStore.updateRun(runId, {
+          historyStore.updateRun(localRunId, {
             status: failedNodes > 0 ? "partial" : "success",
             completedAt: endTime,
             duration,
@@ -297,9 +363,25 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
             failedNodes,
           });
 
+          // Complete run in DB
+          if (dbRunId) {
+            try {
+              await fetch("/api/workflow/complete-run", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  runId: dbRunId,
+                  status: failedNodes > 0 ? "partial" : "success",
+                }),
+              });
+            } catch (err) {
+              console.error("Failed to complete DB run:", err);
+            }
+          }
+
           set({ isExecuting: false });
         },
-        onWorkflowError: (error) => {
+        onWorkflowError: async (error) => {
           console.error("Workflow execution error:", error);
           const endTime = Date.now();
           const duration = endTime - startTime;
@@ -307,7 +389,7 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
           const failedNodes = nodeExecutionResults.filter(r => r.status === "failed").length;
 
           // Update run in history
-          historyStore.updateRun(runId, {
+          historyStore.updateRun(localRunId, {
             status: "failed",
             completedAt: endTime,
             duration,
@@ -315,6 +397,22 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
             successfulNodes,
             failedNodes,
           });
+
+          // Fail run in DB
+          if (dbRunId) {
+            try {
+              await fetch("/api/workflow/complete-run", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  runId: dbRunId,
+                  status: "failed",
+                }),
+              });
+            } catch (err) {
+              console.error("Failed to complete DB run (error):", err);
+            }
+          }
 
           set({ isExecuting: false });
         },
@@ -325,23 +423,27 @@ export const useWorkflowStore = create<WorkflowStore>((set, get) => ({
       const { CycleError } = await import("@/lib/dag");
 
       if (error instanceof CycleError) {
-        // Optionally, you could mark specific nodes as part of the cycle here if the store supports it
         console.warn("Cycle detected:", error.cycle);
       }
 
       set({ isExecuting: false });
 
-      // Ensure specific errors propagate to history
-      // We manually trigger onWorkflowError from the runWorkflow callbacks, 
-      // but if the error happens BEFORE runWorkflow (e.g. in import), we catch it here.
-      // However, runWorkflow re-throws, so we end up here.
-      // We need to ensure the HISTORY is updated with this top-level error if it wasn't already.
+      // Also ensure DB run is failed if top-level crash
+      // Note: onWorkflowError above might be called by runWorkflow's catch, 
+      // but if not, we do best effort here.
+      if (dbRunId) {
+        try {
+          await fetch("/api/workflow/complete-run", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              runId: dbRunId,
+              status: "failed",
+            }),
+          });
+        } catch (e) { }
+      }
 
-      // Since we passed `onWorkflowError` to `runWorkflow`, it should have already handled the history update.
-      // But if it crashed before calling that callback (e.g. inside `getExecutionOrder`), we need to save it.
-
-      // Let's rely on runWorkflow's `catch` block calling `onWorkflowError`.
-      // But we re-throw to ensure the UI knows.
       throw error;
     }
   },

@@ -96,16 +96,25 @@ export default function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
              
              const parsedRuns = data.runs.map((run: any) => ({
                 runId: run.id,
-                scope: run.triggerType === 'manual_node' ? 'single' : (run.triggerType === 'manual_selected' ? 'selected' : 'full'),
-                status: run.status === 'COMPLETED' ? 'success' : (run.status === 'FAILED' ? 'failed' : 'running'),
-                startedAt: new Date(run.startedAt).getTime(),
+                scope: run.scope || (run.triggerType === 'manual_node' ? 'single' : (run.triggerType === 'manual_selected' ? 'selected' : 'full')),
+                status: run.status === 'COMPLETED' ? 'success' : (run.status === 'FAILED' ? 'failed' : run.status),
+                startedAt: new Date(run.createdAt).getTime(),
                 completedAt: run.completedAt ? new Date(run.completedAt).getTime() : undefined,
                 duration: run.duration,
-                // Handle different DB formats or missing fields
-                nodeResults: Array.isArray(run.nodeResults) ? run.nodeResults : [], 
-                totalNodes: 0, // Backend might not store this, calculate or default
-                successfulNodes: 0, 
-                failedNodes: 0,
+                nodeResults: Array.isArray(run.nodeExecutions) ? run.nodeExecutions.map((n: any) => ({
+                    nodeId: n.nodeId,
+                    nodeType: n.nodeType,
+                    nodeName: n.nodeName,
+                    status: n.status,
+                    startedAt: new Date(n.startedAt).getTime(),
+                    completedAt: n.completedAt ? new Date(n.completedAt).getTime() : undefined,
+                    duration: n.duration,
+                    output: n.output,
+                    error: n.error
+                })) : [],
+                totalNodes: run.totalNodes || 0,
+                successfulNodes: run.successfulNodes || 0,
+                failedNodes: run.failedNodes || 0,
              }));
              
              // Recalculate counts if needed from nodeResults
