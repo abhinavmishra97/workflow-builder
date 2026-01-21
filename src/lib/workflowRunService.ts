@@ -4,11 +4,13 @@ import type { Node } from "reactflow";
 export async function createWorkflowRun(input: {
     workflowId: string;
     nodes: Node[];
+    scope?: string;
 }) {
     return prisma.workflowRun.create({
         data: {
             workflowId: input.workflowId,
             status: "running",
+            scope: input.scope || "full",
             totalNodes: input.nodes.length,
             successfulNodes: 0,
             failedNodes: 0,

@@ -1,5 +1,5 @@
 import type { Node, Edge } from "reactflow";
-import { runWorkflow, resetWorkflowStatus } from "./workflowExecutor";
+import { runWorkflow} from "./workflowExecutor";
 import type { NodeExecutionStatus, NodeResult } from "@/types/workflow";
 
 export async function runSelectedNodes(
